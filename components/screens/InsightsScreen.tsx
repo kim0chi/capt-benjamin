@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Plus, Star, CheckCircle2 } from 'lucide-react'
-import { Drawer, DrawerContent } from '@/components/ui/drawer'
+import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer'
 import { CircularProgress } from '@/components/ui/circular-progress'
 import type { Goal } from '@/types'
 
@@ -389,6 +389,9 @@ export function IslandScreen({ goals, prioritizeGoal }: IslandScreenProps) {
       {/* Goal detail bottom sheet */}
       <Drawer open={sheetOpen} onOpenChange={setSheetOpen}>
         <DrawerContent className="border-t border-brass/25 bg-navy px-4 pb-safe pirate-page" style={{ maxHeight: '80vh' }}>
+          <DrawerTitle className="sr-only">
+            {selectedGoal ? `${selectedGoal.name} — Island Details` : 'Island Details'}
+          </DrawerTitle>
           {selectedGoal && (
             <GoalDetailSheet
               goal={selectedGoal}

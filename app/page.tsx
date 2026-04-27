@@ -1,25 +1,27 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import { Drawer, DrawerContent } from '@/components/ui/drawer'
+import { motion, AnimatePresence } from 'framer-motion'
 import { BottomNavigation, type NavTab } from '@/components/BottomNavigation'
-import { CaptainFAB } from '@/components/CaptainFAB'
 import { DashboardScreen } from '@/components/screens/DashboardScreen'
 import { LeaksScreen } from '@/components/screens/BudgetsScreen'
 import { IslandScreen } from '@/components/screens/InsightsScreen'
 import { CaptainChatScreen } from '@/components/screens/CaptainChatScreen'
 import { AlertsScreen } from '@/components/screens/TransactionsScreen'
 import { HealthScoreScreen } from '@/components/screens/SettingsScreen'
+import { LoginScreen } from '@/components/screens/LoginScreen'
+import { OnboardingScreen } from '@/components/screens/OnboardingScreen'
+import { CaptainHeader } from '@/components/CaptainHeader'
 import { useAppState } from '@/hooks/useAppState'
 import type { AIAction } from '@/types'
 
-type SubView = 'none' | 'health'
+type SubView = 'none' | 'health' | 'login' | 'onboarding'
 
 const TAB_ORDER: NavTab[] = ['home', 'leaks', 'island', 'alerts']
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<NavTab>('home')
-  const [subView, setSubView] = useState<SubView>('none')
+  const [subView, setSubView] = useState<SubView>('login')
   const [slideKey, setSlideKey] = useState(0)
   const [slideDir, setSlideDir] = useState<'left' | 'right'>('right')
   const [chatOpen, setChatOpen] = useState(false)
@@ -60,6 +62,12 @@ export default function Home() {
   }
 
   const renderScreen = () => {
+    if (subView === 'login') {
+      return <LoginScreen onLogin={() => setSubView('onboarding')} />
+    }
+    if (subView === 'onboarding') {
+      return <OnboardingScreen onComplete={() => setSubView('none')} />
+    }
     if (subView === 'health') {
       return (
         <HealthScoreScreen
@@ -99,15 +107,24 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-navy text-foreground pirate-page overflow-x-hidden">
-      <div className="mx-auto max-w-md md:max-w-2xl">
-        <div
-          key={slideKey}
-          className={slideClass}
-          onTouchStart={subView === 'none' ? handleTouchStart : undefined}
-          onTouchEnd={subView === 'none' ? handleTouchEnd : undefined}
-        >
-          {renderScreen()}
-        </div>
+      <div className="mx-auto max-w-md md:max-w-2xl relative">
+        {subView === 'none' && (
+          <CaptainHeader onExpandChat={() => setChatOpen(true)} />
+        )}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={subView !== 'none' ? subView : activeTab}
+            initial={{ opacity: 0, x: slideDir === 'left' ? 20 : -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: slideDir === 'left' ? -20 : 20 }}
+            transition={{ duration: 0.3, ease: 'easeOut' }}
+            onTouchStart={subView === 'none' ? handleTouchStart : undefined}
+            onTouchEnd={subView === 'none' ? handleTouchEnd : undefined}
+            className={subView === 'none' ? 'pb-20 pt-20' : ''} 
+          >
+            {renderScreen()}
+          </motion.div>
+        </AnimatePresence>
       </div>
 
       {/* Bottom nav — hidden during subView */}
@@ -115,20 +132,30 @@ export default function Home() {
         <BottomNavigation activeTab={activeTab} onTabChange={navigateToTab} />
       )}
 
-      {/* Floating Captain FAB — hidden during chat and subView */}
-      {subView === 'none' && !chatOpen && (
-        <CaptainFAB onClick={() => setChatOpen(true)} />
-      )}
-
-      {/* Captain chat drawer via vaul */}
-      <Drawer open={chatOpen} onOpenChange={setChatOpen}>
-        <DrawerContent
-          className="border-t border-brass/25 bg-navy pirate-page"
-          style={{ height: '88vh' }}
-        >
-          <CaptainChatScreen onStateUpdate={handleAIAction} />
-        </DrawerContent>
-      </Drawer>
+      {/* Captain chat overlaid via framer motion */}
+      <AnimatePresence>
+        {chatOpen && (
+          <motion.div
+            initial={{ y: '-100%', opacity: 0.5 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: '-100%', opacity: 0 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            className="fixed inset-0 z-50 flex flex-col bg-navy/95 backdrop-blur-3xl pt-safe"
+          >
+            <div className="absolute top-6 right-6 z-50">
+              <button 
+                onClick={() => setChatOpen(false)}
+                className="rounded-full bg-ink/80 p-2 px-4 font-bold text-xs uppercase tracking-widest text-bone border border-brass/20"
+              >
+                Close Link
+              </button>
+            </div>
+            <div className="flex-1 overflow-hidden pt-12">
+              <CaptainChatScreen onStateUpdate={handleAIAction} />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </main>
   )
 }
