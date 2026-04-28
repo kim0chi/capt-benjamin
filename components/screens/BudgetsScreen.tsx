@@ -15,8 +15,8 @@ export function LeaksScreen({ leaks, patchLeak }: LeaksScreenProps) {
   const savedAmount = patchedLeaks.reduce((sum, l) => sum + l.amount, 0)
 
   return (
-    <div className="min-h-screen bg-navy pb-28 pirate-page">
-      <div className="space-y-5 px-4 pt-6">
+    <div className="min-h-dvh bg-navy pb-28 md:pb-6 pirate-page">
+      <div className="space-y-6 px-4 pt-6 max-w-5xl mx-auto pb-safe">
         {/* Header */}
         <div className="flex items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-full border border-coral/35 bg-coral/12 text-coral">
@@ -35,8 +35,8 @@ export function LeaksScreen({ leaks, patchLeak }: LeaksScreenProps) {
 
         {/* Patched savings banner */}
         {savedAmount > 0 && (
-          <div className="rounded-[24px] border border-teal/30 bg-teal/10 p-4 flex items-center gap-3">
-            <CheckCircle2 className="h-6 w-6 text-teal flex-shrink-0" />
+          <div className="rounded-3xl border border-teal/30 bg-teal/10 p-4 flex items-center gap-3">
+            <CheckCircle2 className="h-6 w-6 text-teal shrink-0" />
             <div>
               <p className="text-sm font-bold text-teal">₱{savedAmount.toLocaleString()} recovered this week</p>
               <p className="text-xs text-sand/65">{patchedLeaks.length} leak{patchedLeaks.length !== 1 ? 's' : ''} patched</p>
@@ -69,24 +69,24 @@ export function LeaksScreen({ leaks, patchLeak }: LeaksScreenProps) {
               style={!leak.patched ? {} : {}}
             >
               <div className="flex items-start justify-between gap-4">
-                <div>
+                <div className="flex-1 min-w-0">
                   <p className="pirate-kicker">{leak.patched ? 'Sealed' : 'Leak report'}</p>
-                  <h2 className={`font-display text-2xl font-semibold ${leak.patched ? 'text-teal line-through' : 'text-bone'}`}>
+                  <h2 className={`font-display text-2xl font-semibold ${leak.patched ? 'text-teal line-through' : 'text-bone'} truncate`}>
                     {leak.category}
                   </h2>
                   <span className={`mt-2 inline-flex rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] ${
                     leak.patched
                       ? 'border-teal/25 bg-teal/10 text-teal'
                       : 'border-coral/25 bg-coral/10 text-coral'
-                  }`}>
+                  } whitespace-nowrap`}>
                     {leak.frequency}
                   </span>
                 </div>
-                <div className="text-right">
+                <div className="text-right shrink-0">
                   <p className={`font-display text-3xl font-semibold ${leak.patched ? 'text-sand/50 line-through' : 'text-coral'}`}>
                     ₱{leak.amount.toLocaleString()}
                   </p>
-                  <p className="text-xs uppercase tracking-[0.14em] text-sand/60">per week</p>
+                  <p className="text-xs uppercase tracking-[0.14em] text-sand/60 whitespace-nowrap">per week</p>
                 </div>
               </div>
 

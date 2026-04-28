@@ -1,196 +1,313 @@
 'use client'
 
-import { Wallet, Calendar, Droplets, CloudLightning, Compass } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { ArrowRight, CloudLightning, Compass, Droplets, PlusCircle } from 'lucide-react'
 import { BoatIllustration } from '@/components/illustrations/BoatIllustration'
-import { BudgetAllocationBar } from '@/components/BudgetAllocationBar'
-import type { AppState } from '@/types'
-import type { NavTab } from '@/components/BottomNavigation'
+import type { AppState, Goal, SavingsAllocation, StormWarning, Leak } from '@/types'
+
+import { useToast } from '@/hooks/use-toast'
 
 interface DashboardScreenProps {
   state: AppState
-  onTabChange: (tab: NavTab) => void
+  userName: string
   onHealthTap: () => void
+  onOpenChat: () => void
+  onLogSavings: (
+    amount: number,
+    allocations: SavingsAllocation[],
+    sourceNote: string,
+    createdBy?: 'manual' | 'captain',
+  ) => void
+  primaryGoal?: Goal
+  nextStorm?: StormWarning
+  topLeak?: Leak
 }
 
-function getGreeting(): string {
-  const hour = new Date().getHours()
-  if (hour < 12) return 'Morning tide report'
-  if (hour < 17) return 'Afternoon ledger report'
-  return 'Evening watch report'
-}
+const QUICK_AMOUNTS = [20, 50, 100]
 
-const captainQuip =
-  "The ship is steady, but food delivery and coffee are carving the fastest grooves through this week's cargo."
+export function DashboardScreen({
+  state,
+  userName,
+  onHealthTap,
+  onOpenChat,
+  onLogSavings,
+  primaryGoal,
+  nextStorm,
+  topLeak,
+}: DashboardScreenProps) {
+  const { toast } = useToast()
+  const [amountInput, setAmountInput] = useState('')
+  const [sourceNote, setSourceNote] = useState('')
+  const [splitMode, setSplitMode] = useState(false)
+  const [allocations, setAllocations] = useState<Record<string, string>>(() => {
+    const priority = primaryGoal ?? state.goals[0]
+    return priority ? { [priority.id]: '' } : {}
+  })
 
-export function DashboardScreen({ state, onTabChange, onHealthTap }: DashboardScreenProps) {
-  const totalLeakAmount = state.leaks.reduce((sum, leak) => sum + leak.amount, 0)
-  const billsTotal = state.storms.reduce((sum, s) => sum + s.amount, 0)
-  const goalsTotal = state.goals.reduce((sum, g) => sum + g.weeklyContribution * 4, 0)
-  const billsCount = state.storms.length
+  const amountValue = Number(amountInput) || 0
+  const todaySaved = state.dailyCheckIn.totalSaved
+  const streak = state.dailyCheckIn.streakCount
+  const dailyComplete = state.dailyCheckIn.completed
 
-  // Monthly summary
-  const savingsRate = Math.round(((state.monthlyIncome - state.monthlyExpenses) / state.monthlyIncome) * 100)
-  const saved = state.monthlyIncome - state.monthlyExpenses
+  const computedAllocations = useMemo(() => {
+    if (amountValue <= 0) return []
+
+    if (!splitMode) {
+      const targetGoal = primaryGoal ?? state.goals[0]
+      return targetGoal ? [{ goalId: targetGoal.id, amount: amountValue }] : []
+    }
+
+    return Object.entries(allocations)
+      .map(([goalId, raw]) => ({ goalId, amount: Number(raw) || 0 }))
+      .filter((allocation) => allocation.amount > 0)
+  }, [allocations, amountValue, primaryGoal, splitMode, state.goals])
+
+  const allocatedTotal = computedAllocations.reduce((sum, allocation) => sum + allocation.amount, 0)
+  const allocationValid = amountValue > 0 && allocatedTotal === amountValue
+
+  const handleQuickAmount = (amount: number) => {
+    setAmountInput(String(amount))
+    if (!splitMode && primaryGoal) {
+      setAllocations({ [primaryGoal.id]: String(amount) })
+    }
+  }
+
+  const handleToggleSplit = () => {
+    setSplitMode((prev) => {
+      const next = !prev
+      if (!next && primaryGoal) {
+        setAllocations({ [primaryGoal.id]: amountInput || '' })
+      }
+      return next
+    })
+  }
+
+  const handleSave = () => {
+    if (!allocationValid) return
+    onLogSavings(
+      amountValue,
+      computedAllocations,
+      sourceNote.trim() || 'Pocket savings',
+      'manual',
+    )
+    
+    toast({
+      title: 'Funds Stowed!',
+      description: `Captain logged an addition of P${amountValue} into the ledger.`,
+    })
+
+    setAmountInput('')
+    setSourceNote('')
+    if (primaryGoal) {
+      setAllocations({ [primaryGoal.id]: '' })
+      setSplitMode(false)
+    } else {
+      setAllocations({})
+    }
+  }
+
+  const primaryGoalProgress = primaryGoal
+    ? Math.round((primaryGoal.savedAmount / primaryGoal.targetAmount) * 100)
+    : 0
 
   return (
-    <div className="min-h-screen bg-navy pb-28 pirate-page">
-      <div className="space-y-4 px-4 pt-4">
-        {/* Boat hero — taps to health subview */}
-        <button
-          onClick={onHealthTap}
-          className="w-full text-left transition-transform active:scale-[0.985] mb-4"
-          aria-label="View full ship condition"
-        >
-          <div className="rounded-[32px] pirate-panel overflow-hidden relative">
-            <BoatIllustration
-              healthScore={state.boatHealth.overallScore}
-              leakLabels={state.leaks.slice(0, 2).map(leak => leak.category)}
-              status={state.boatHealth.status}
-              className="rounded-none bg-transparent shadow-none w-full border-b border-brass/10"
-            />
-            <div className="p-5 flex items-center justify-between bg-ink/30 backdrop-blur-md">
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-teal">Captain&apos;s log</p>
-                <p className="font-display text-xl font-bold text-bone mt-1">Open ship condition</p>
-              </div>
-              <div className="rounded-full border border-teal/40 bg-teal/10 px-4 py-2 text-xs font-bold uppercase tracking-wider text-teal shadow-[0_0_15px_rgba(76,160,143,0.2)]">
-                {state.boatHealth.status}
-              </div>
-            </div>
-          </div>
-        </button>
-
-        {/* 4 stat cards - modern bento grid */}
-        <div className="grid grid-cols-2 gap-3">
-          {/* Main Hero Metric spans full width */}
-          <div className="col-span-2 rounded-[28px] pirate-panel p-5 relative overflow-hidden group">
-            <div className="absolute inset-0 bg-gradient-to-tr from-brass/5 via-transparent to-teal/5 opacity-50 z-0" />
-            <div className="relative z-10 flex items-start justify-between">
-              <div className="mb-2 flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full border border-brass/40 bg-brass/20 text-brass shadow-[0_0_15px_rgba(198,161,91,0.2)]">
-                  <Wallet className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-brass">Cargo room</p>
-                  <p className="text-xs text-sand/70">Safe to spend</p>
-                </div>
-              </div>
-            </div>
-            <div className="relative z-10 mt-2">
-              <p className="font-display text-[2.75rem] leading-none font-bold text-bone">₱{state.safeToSpend.toLocaleString()}</p>
-              <p className="mt-2 text-sm text-sand/80 font-medium">Available without rocking the hull.</p>
-            </div>
-          </div>
-
-          <div className="col-span-1 rounded-[24px] pirate-panel p-4 flex flex-col justify-between">
-            <div className="mb-2">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full border border-teal/40 bg-teal/20 text-teal shadow-[0_0_10px_rgba(76,160,143,0.3)] mb-3">
-                <Calendar className="h-4 w-4" />
-              </div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-teal">Pay cycle</p>
-            </div>
-            <div>
-              <p className="font-display text-4xl font-bold text-bone">{state.daysUntilPayday}</p>
-              <p className="mt-1 text-[11px] text-sand/70 leading-tight">Days left until payday.</p>
-            </div>
-          </div>
-
-          <button
-            onClick={() => onTabChange('leaks')}
-            className="col-span-1 rounded-[24px] pirate-panel p-4 text-left transition-transform active:scale-[0.98] flex flex-col justify-between"
-          >
-            <div className="mb-2">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full border border-coral/40 bg-coral/20 text-coral shadow-[0_0_10px_rgba(239,68,68,0.3)] mb-3">
-                <Droplets className="h-4 w-4" />
-              </div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-coral">Hull leaks</p>
-            </div>
-            <div>
-              <p className="font-display text-2xl font-bold text-bone">₱{totalLeakAmount.toLocaleString()}</p>
-              <p className="mt-1 text-[11px] text-sand/70 leading-tight">{state.leaks.length} leaks worth patching.</p>
-            </div>
-          </button>
-
-          <button
-            onClick={() => onTabChange('alerts')}
-            className="col-span-2 rounded-[24px] pirate-panel p-4 text-left transition-transform active:scale-[0.98] flex items-center justify-between"
-          >
-            <div className="flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full border border-sky/40 bg-sky/20 text-sky shadow-[0_0_15px_rgba(56,189,248,0.2)]">
-                <CloudLightning className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-sky">Storm deck</p>
-                <div className="flex items-baseline gap-2">
-                  <p className="font-display text-2xl font-bold text-bone">{billsCount}</p>
-                  <p className="text-xs text-sand/70 font-medium">bills incoming</p>
-                </div>
-              </div>
-            </div>
-          </button>
-        </div>
-
-        {/* Budget allocation bar */}
-        <BudgetAllocationBar
-          income={state.monthlyIncome}
-          billsTotal={billsTotal}
-          leaksTotal={totalLeakAmount * 4}
-          goalsTotal={goalsTotal}
-        />
-
-        {/* Monthly summary */}
-        <div className="rounded-[28px] pirate-panel overflow-hidden">
-          <div className="px-5 pt-4 pb-2">
-            <p className="pirate-kicker">Monthly summary</p>
-            <h2 className="font-display text-2xl font-semibold text-bone">This month&apos;s ledger</h2>
-          </div>
-          <div className="grid grid-cols-3 divide-x divide-brass/12 border-t border-brass/12">
-            <div className="px-3 py-4 text-center">
-              <p className="text-xs uppercase tracking-[0.12em] text-sand/60">Income</p>
-              <p className="font-display text-xl font-bold text-bone mt-1">₱{(state.monthlyIncome / 1000).toFixed(0)}k</p>
-              <p className="text-xs text-teal mt-1">↑ on track</p>
-            </div>
-            <div className="px-3 py-4 text-center">
-              <p className="text-xs uppercase tracking-[0.12em] text-sand/60">Spent</p>
-              <p className="font-display text-xl font-bold text-coral mt-1">₱{(state.monthlyExpenses / 1000).toFixed(1)}k</p>
-              <p className="text-xs text-sand/55 mt-1">{Math.round((state.monthlyExpenses / state.monthlyIncome) * 100)}%</p>
-            </div>
-            <div className="px-3 py-4 text-center">
-              <p className="text-xs uppercase tracking-[0.12em] text-sand/60">Saved</p>
-              <p className="font-display text-xl font-bold text-teal mt-1">₱{(saved / 1000).toFixed(1)}k</p>
-              <p className="text-xs text-teal mt-1">{savingsRate}% ↑</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Top leaks preview */}
-        <div className="rounded-[28px] pirate-panel overflow-hidden">
-          <div className="flex items-center justify-between px-4 pb-2 pt-4">
-            <div>
-              <p className="pirate-kicker">Captain&apos;s log</p>
-              <h2 className="font-display text-2xl font-semibold text-bone">Top leaks in the hull</h2>
-            </div>
-            <button onClick={() => onTabChange('leaks')} className="text-xs font-semibold uppercase tracking-[0.16em] text-gold">
-              View all
+    <div className="min-h-screen bg-navy pb-28 md:pb-6 pirate-page">
+      <div className="space-y-6 px-4 pt-6 md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-6 md:space-y-0 md:auto-rows-min max-w-7xl mx-auto pb-safe">
+        <section className="relative overflow-hidden rounded-[34px] shadow-2xl md:col-span-2 lg:col-span-2 lg:row-span-2">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(110,162,165,0.12),transparent_42%)]" />
+          <BoatIllustration
+            healthScore={state.boatHealth.overallScore}
+            leakLabels={topLeak ? [topLeak.category] : []}
+            status={state.boatHealth.status}
+            className="rounded-none h-full min-h-75"
+          />
+          <div className="absolute bottom-5 left-5 z-10 px-1">
+            <button
+              onClick={onHealthTap}
+              className="inline-flex items-center gap-2 rounded-full border border-brass/16 bg-ink/68 px-4 py-2.5 text-sm font-semibold uppercase tracking-[0.16em] text-brass backdrop-blur-md hover:bg-ink/80 transition-colors shadow-lg"
+            >
+              View ship condition
+              <ArrowRight className="h-4 w-4" />
             </button>
           </div>
-          <div className="divide-y divide-brass/10">
-            {state.leaks.map(leak => (
-              <div key={leak.id} className="flex items-center justify-between px-4 py-3">
-                <div>
-                  <p className="font-medium text-bone text-sm">{leak.category}</p>
-                  <p className="text-xs text-sand/60">{leak.frequency}</p>
-                </div>
-                <div className="text-right">
-                  <p className={`text-sm font-bold ${leak.patched ? 'text-teal line-through' : 'text-coral'}`}>
-                    ₱{leak.amount.toLocaleString()}
-                  </p>
-                  {leak.patched && <p className="text-xs text-teal">Patched ✓</p>}
-                </div>
-              </div>
+        </section>
+
+        <section className="rounded-[28px] pirate-panel p-5 md:col-span-1 lg:col-span-1">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="pirate-kicker">Daily check-in</p>
+              <h1 className="text-[1.9rem] font-semibold text-bone">How much did you save today, {userName}?</h1>
+              <p className="mt-2 text-sm text-sand/72">
+                Log today&apos;s amount, say where you placed it, and move it toward one or more goals.
+              </p>
+            </div>
+            <button
+              onClick={onOpenChat}
+              className="shrink-0 rounded-full border border-brass/16 bg-ink/52 p-2 text-brass"
+              aria-label="Ask Capt. Benjamin for help"
+            >
+              <Compass className="h-4 w-4" />
+            </button>
+          </div>
+
+          <div className="mt-4 flex gap-2 overflow-x-auto scrollbar-hide">
+            {QUICK_AMOUNTS.map((amount) => (
+              <button
+                key={amount}
+                onClick={() => handleQuickAmount(amount)}
+                className="rounded-full border border-brass/18 bg-wood-light/35 px-4 py-2 text-sm font-semibold text-sand"
+              >
+                Save P{amount}
+              </button>
             ))}
           </div>
-        </div>
+
+          <div className="mt-4 space-y-3">
+            <div>
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.16em] text-sand/60">
+                Amount saved today
+              </label>
+              <input
+                type="number"
+                inputMode="numeric"
+                min="0"
+                value={amountInput}
+                onChange={(e) => setAmountInput(e.target.value)}
+                placeholder="0"
+                className="w-full rounded-2xl border border-brass/18 bg-wood-light/38 px-4 py-3 text-lg font-semibold text-bone placeholder:text-sand/35 focus:border-brass focus:outline-none focus:ring-1 focus:ring-brass"
+              />
+            </div>
+
+            <div>
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.16em] text-sand/60">
+                Where did you put it?
+              </label>
+              <input
+                type="text"
+                value={sourceNote}
+                onChange={(e) => setSourceNote(e.target.value)}
+                placeholder="Cash envelope, GCash, drawer jar"
+                className="w-full rounded-2xl border border-brass/18 bg-wood-light/38 px-4 py-3 text-sm text-bone placeholder:text-sand/35 focus:border-brass focus:outline-none focus:ring-1 focus:ring-brass"
+              />
+            </div>
+          </div>
+
+          <div className="mt-4 flex items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-sand/60">Allocation</p>
+              <p className="text-sm text-sand/72">
+                {splitMode
+                  ? 'Split this amount across goals.'
+                  : `By default this goes to ${primaryGoal?.name ?? 'your main goal'}.`}
+              </p>
+            </div>
+            <button
+              onClick={handleToggleSplit}
+              className={`rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] ${
+                splitMode ? 'bg-brass text-ink' : 'border border-brass/18 bg-ink/40 text-brass'
+              }`}
+            >
+              {splitMode ? 'Single goal' : 'Split across goals'}
+            </button>
+          </div>
+
+          {splitMode && (
+            <div className="mt-4 space-y-3">
+              {state.goals.map((goal) => (
+                <div key={goal.id} className="flex items-center justify-between gap-3 rounded-2xl border border-brass/12 bg-ink/28 px-3 py-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-bone">{goal.name}</p>
+                    <p className="text-xs text-sand/60">
+                      {Math.round((goal.savedAmount / goal.targetAmount) * 100)}% complete
+                    </p>
+                  </div>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    min="0"
+                    value={allocations[goal.id] ?? ''}
+                    onChange={(e) =>
+                      setAllocations((prev) => ({ ...prev, [goal.id]: e.target.value }))
+                    }
+                    placeholder="0"
+                    className="w-24 rounded-xl border border-brass/18 bg-wood-light/38 px-3 py-2 text-right text-sm font-semibold text-bone focus:border-brass focus:outline-none"
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="mt-4 flex items-center justify-between rounded-2xl border border-brass/12 bg-ink/28 px-4 py-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-sand/60">Today&apos;s total</p>
+              <p className="text-lg font-semibold text-bone">P{todaySaved.toLocaleString()}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-sand/60">Current streak</p>
+              <p className="text-lg font-semibold text-brass">{streak} days</p>
+            </div>
+          </div>
+
+          {!allocationValid && amountValue > 0 && (
+            <p className="mt-3 text-xs text-coral">
+              Make sure your goal split adds up to P{amountValue.toLocaleString()}.
+            </p>
+          )}
+
+          <button
+            onClick={handleSave}
+            disabled={!allocationValid}
+            className="mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-brass px-4 py-3 text-sm font-bold uppercase tracking-[0.16em] text-ink transition-transform active:scale-95 disabled:cursor-not-allowed disabled:opacity-45 hover:bg-gold"
+          >
+            <PlusCircle className="h-4 w-4" />
+            {dailyComplete ? 'Add another savings log' : 'Log today\'s savings'}
+          </button>
+        </section>
+
+        <section className="grid grid-cols-1 gap-3 md:col-span-2 lg:col-span-3 md:grid-cols-2 lg:grid-cols-2">
+          <div className="rounded-3xl pirate-panel p-4">
+            <p className="pirate-kicker">Primary goal</p>
+            <div className="mt-2 flex items-end justify-between gap-3">
+              <div>
+                <h2 className="text-2xl font-semibold text-bone">{primaryGoal?.name ?? 'No goal selected'}</h2>
+                <p className="text-sm text-sand/70">
+                  P{primaryGoal?.savedAmount.toLocaleString() ?? 0} of P{primaryGoal?.targetAmount.toLocaleString() ?? 0}
+                </p>
+              </div>
+              <p className="text-2xl font-semibold text-brass">{primaryGoalProgress}%</p>
+            </div>
+            <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-wood/30">
+              <div
+                className="h-2.5 rounded-full bg-[linear-gradient(90deg,#c6a15b,#6ea2a5)]"
+                style={{ width: `${primaryGoalProgress}%` }}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-3xl pirate-panel p-4">
+              <div className="flex items-center gap-2 text-coral">
+                <Droplets className="h-4 w-4" />
+                <p className="text-xs font-semibold uppercase tracking-[0.16em]">Leak to avoid</p>
+              </div>
+              <p className="mt-2 text-base font-semibold text-bone">{topLeak?.category ?? 'No active leak'}</p>
+              <p className="mt-1 text-sm text-sand/68">
+                {topLeak ? `Worth P${topLeak.amount.toLocaleString()} per week.` : 'Hull is steady today.'}
+              </p>
+            </div>
+
+            <div className="rounded-3xl pirate-panel p-4">
+              <div className="flex items-center gap-2 text-sky">
+                <CloudLightning className="h-4 w-4" />
+                <p className="text-xs font-semibold uppercase tracking-[0.16em]">Next bill</p>
+              </div>
+              <p className="mt-2 text-base font-semibold text-bone">{nextStorm?.name ?? 'No storms queued'}</p>
+              <p className="mt-1 text-sm text-sand/68">
+                {nextStorm ? `Due in ${nextStorm.daysUntilDue} day(s) for P${nextStorm.amount.toLocaleString()}.` : 'Clear waters ahead.'}
+              </p>
+            </div>
+          </div>
+        </section>
       </div>
     </div>
   )

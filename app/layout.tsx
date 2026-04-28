@@ -1,14 +1,10 @@
 import type { Metadata } from 'next'
-import { Cormorant_Garamond, Geist } from 'next/font/google'
+import { Geist } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
+import { Toaster } from '@/components/ui/toaster'
 import './globals.css'
 
 const geist = Geist({ subsets: ['latin'] })
-const cormorant = Cormorant_Garamond({
-  subsets: ['latin'],
-  variable: '--font-display',
-  weight: ['500', '600', '700'],
-})
 
 export const metadata: Metadata = {
   title: 'Capt. Benjamin',
@@ -18,19 +14,10 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
-      },
-      {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
-      },
-      {
-        url: '/icon.svg',
+        url: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">⚓</text></svg>',
         type: 'image/svg+xml',
       },
     ],
-    apple: '/apple-icon.png',
   },
 }
 
@@ -41,8 +28,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="bg-background">
-      <body className={`${geist.className} ${cormorant.variable} bg-background font-sans antialiased`}>
+      <body className={`${geist.className} bg-background font-sans antialiased`}>
         {children}
+        <Toaster />
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>

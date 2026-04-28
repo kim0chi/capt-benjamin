@@ -1,46 +1,44 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { Anchor, MessageSquareText } from 'lucide-react'
+import { MessageCircle, User } from 'lucide-react'
 
 interface CaptainHeaderProps {
+  captainNote: string
   onExpandChat: () => void
+  onProfileTap?: () => void
 }
 
-export function CaptainHeader({ onExpandChat }: CaptainHeaderProps) {
+export function CaptainHeader({ captainNote, onExpandChat, onProfileTap }: CaptainHeaderProps) {
   return (
-    <motion.div 
+    <motion.div
       initial={{ y: -100 }}
       animate={{ y: 0 }}
       transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-      className="fixed top-0 left-0 right-0 z-40 px-4 pt-safe backdrop-blur-xl bg-ink/70 border-b border-brass/10 shadow-[0_4px_30px_rgba(0,0,0,0.5)] cursor-pointer active:scale-[0.98] origin-top transition-transform"
-      onClick={onExpandChat}
+      className="fixed left-0 right-0 top-0 z-40 border-b border-brass/10 bg-ink/72 px-4 pt-safe backdrop-blur-xl shadow-[0_4px_24px_rgba(0,0,0,0.28)] lg:hidden"
     >
-      <div className="mx-auto max-w-md md:max-w-2xl flex items-center justify-between py-3">
-        <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full border border-brass/40 bg-teal/20 text-brass shadow-[0_0_15px_rgba(76,160,143,0.3)]">
-            <Anchor className="h-4 w-4" />
+      <div className="mx-auto flex max-w-md items-start justify-between gap-3 py-3 md:max-w-2xl">
+        <button
+          onClick={onExpandChat}
+          className="min-w-0 flex-1 text-left"
+          aria-label="Open Capt. Benjamin chat"
+        >
+          <p className="text-[10px] font-bold uppercase tracking-widest text-teal">Capt. Benjamin</p>
+          <p className="mt-1 truncate text-sm font-semibold text-bone">{captainNote}</p>
+          <div className="mt-1 flex items-center gap-2 text-xs text-sand/65">
+            <MessageCircle className="h-3.5 w-3.5 text-brass" />
+            <span>Ask where to put today&apos;s savings</span>
           </div>
-          <div className="flex flex-col">
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-teal">Comms Link</span>
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-teal"></span>
-              </span>
-            </div>
-            <p className="text-sm font-semibold text-bone truncate max-w-[200px]">
-              The ship is steady, but coffee is carving a groove...
-            </p>
-          </div>
-        </div>
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brass/10 text-brass">
-          <MessageSquareText className="h-4 w-4" />
-        </div>
+        </button>
+
+        <button
+          className="relative z-50 flex h-9 w-9 items-center justify-center rounded-full bg-brass/10 text-brass transition-colors hover:bg-brass/18"
+          onClick={onProfileTap}
+          aria-label="Profile settings"
+        >
+          <User className="h-4 w-4" />
+        </button>
       </div>
-      
-      {/* Decorative neon bottom edge */}
-      <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-teal/30 to-transparent" />
     </motion.div>
   )
 }

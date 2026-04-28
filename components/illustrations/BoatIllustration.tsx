@@ -1,6 +1,5 @@
 'use client'
 
-import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 
 interface BoatIllustrationProps {
@@ -16,96 +15,123 @@ export function BoatIllustration({
   status = 'Floating',
   className,
 }: BoatIllustrationProps) {
-  // Translate healthScore (0-100) into a water height inside the hull (0% to 100%)
-  // Lower health = higher water level indicating it's sinking.
-  const dangerLevel = Math.max(0, 100 - healthScore)
-  const waterLevel = 10 + (dangerLevel * 0.7) // Map 0-100 to 10%-80% water height.
+  const statusColor =
+    status === 'Floating' ? '#4ca08f' : status === 'Leaking' ? '#c6a15b' : '#a4493d'
 
   return (
-    <div className={cn('relative w-full aspect-[4/3] rounded-[28px] overflow-hidden bg-gradient-to-b from-navy to-ink shadow-[inset_0_0_40px_rgba(0,0,0,0.5)] flex items-center justify-center p-6', className)}>
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-teal/5 via-navy to-ink opacity-60" />
-      
-      {/* Decorative stars/grid background */}
-      <div className="absolute inset-0 opacity-20 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9IiNjNmExNWIiLz48L3N2Zz4=')] [background-size:24px_24px] mask-image:linear-gradient(to_bottom,white,transparent)" />
-
-      {/* Main Cross-Section Hull SVG Container */}
+    <div className={cn('relative w-full overflow-hidden will-change-transform', className)}>
       <svg
-        viewBox="0 0 200 200"
-        className="w-full h-full max-w-[280px] drop-shadow-2xl overflow-visible"
+        viewBox="0 0 400 270"
+        width="100%"
+        preserveAspectRatio="xMidYMid meet"
+        xmlns="http://www.w3.org/2000/svg"
       >
         <defs>
-          <linearGradient id="hullGrad" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#3a2618" />
-            <stop offset="100%" stopColor="#1e130c" />
+          <linearGradient id="seaGradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#183041" />
+            <stop offset="100%" stopColor="#101c2a" />
           </linearGradient>
-          <linearGradient id="waterGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#ef4444" stopOpacity="0.8" />
-            <stop offset="100%" stopColor="#991b1b" stopOpacity="0.4" />
+          <linearGradient id="shipHull" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#4b3424" />
+            <stop offset="100%" stopColor="#26180f" />
           </linearGradient>
-          <clipPath id="innerHullClip">
-            <path d="M 30,50 L 170,50 C 170,120 150,180 100,180 C 50,180 30,120 30,50 Z" />
-          </clipPath>
+          <linearGradient id="sailLight" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#f2ead9" />
+            <stop offset="100%" stopColor="#d8c5a6" />
+          </linearGradient>
         </defs>
 
-        {/* Outer Hull */}
-        <motion.path
-          animate={{ y: [0, 4, 0], rotate: [-1, 1, -1] }}
-          transition={{ repeat: Infinity, duration: 6, ease: "easeInOut" }}
-          d="M 20,40 L 180,40 C 180,130 150,190 100,190 C 50,190 20,130 20,40 Z"
-          fill="url(#hullGrad)"
-          stroke="#c6a15b"
-          strokeWidth="3"
-        />
+        <rect x="0" y="0" width="400" height="270" fill="url(#seaGradient)" />
+        <rect x="0" y="0" width="400" height="118" fill="rgba(110, 162, 165, 0.06)" />
+        <circle cx="336" cy="42" r="26" fill="rgba(198, 161, 91, 0.15)" />
 
-        {/* Inner Hull Cross-Section (Empty Cargo) */}
-        <motion.path
-          animate={{ y: [0, 4, 0], rotate: [-1, 1, -1] }}
-          transition={{ repeat: Infinity, duration: 6, ease: "easeInOut" }}
-          d="M 30,50 L 170,50 C 170,120 150,180 100,180 C 50,180 30,120 30,50 Z"
-          fill="#111827"
-          stroke="#4b5563"
-          strokeWidth="1"
-        />
+        <g opacity="0.16">
+          <circle cx="52" cy="44" r="2" fill="#f3e5cc" />
+          <circle cx="92" cy="62" r="1.4" fill="#f3e5cc" />
+          <circle cx="268" cy="34" r="1.6" fill="#f3e5cc" />
+          <circle cx="304" cy="78" r="1.2" fill="#f3e5cc" />
+        </g>
 
-        {/* Leaked Water inside the Hull */}
-        <g clipPath="url(#innerHullClip)">
-          <motion.rect
-            initial={{ height: 0, y: 180 }}
-            animate={{ height: `${waterLevel}%`, y: 180 - (180 * (waterLevel / 100)) }}
-            transition={{ type: 'spring', damping: 20, stiffness: 40 }}
-            x="0"
-            width="200"
-            fill="url(#waterGrad)"
+        <g className="animate-wave-flow-slow" transform="translate(0 0)">
+          <path
+            d="M0 156 C28 148 56 164 84 156 C112 148 140 164 168 156 C196 148 224 164 252 156 C280 148 308 164 336 156 C364 148 392 164 420 156 C448 148 476 164 504 156 C532 148 560 164 588 156 C616 148 644 164 672 156 C700 148 728 164 756 156 C784 148 812 164 840 156 L840 270 L0 270 Z"
+            fill="rgba(76,160,143,0.28)"
           />
         </g>
 
-        {/* Cargo Crates */}
-        <motion.g 
-          animate={{ y: [0, 4, 0], rotate: [-1, 1, -1] }}
-          transition={{ repeat: Infinity, duration: 6, ease: "easeInOut" }}
-        >
-          <rect x="85" y="140" width="30" height="30" rx="4" fill="#a16207" stroke="#c6a15b" strokeWidth="1.5" />
-          <rect x="65" y="110" width="25" height="25" rx="3" fill="#ca8a04" stroke="#c6a15b" strokeWidth="1" />
-          <rect x="110" y="115" width="25" height="25" rx="3" fill="#ca8a04" stroke="#c6a15b" strokeWidth="1" />
-        </motion.g>
+        <g className="animate-wave-flow" transform="translate(0 0)">
+          <path
+            d="M0 168 C30 158 60 176 90 168 C120 158 150 176 180 168 C210 158 240 176 270 168 C300 158 330 176 360 168 C390 158 420 176 450 168 C480 158 510 176 540 168 C570 158 600 176 630 168 C660 158 690 176 720 168 C750 158 780 176 810 168 C840 158 870 176 900 168 L900 270 L0 270 Z"
+            fill="rgba(110,162,165,0.22)"
+          />
+        </g>
 
-        {/* Leak Drips (Based on leaks) */}
-        {leakLabels.length > 0 && (
-          <>
-            <motion.circle 
-              animate={{ cy: [20, 160], opacity: [0, 1, 0] }}
-              transition={{ repeat: Infinity, duration: 1.5, ease: "easeIn" }}
-              cx="50" r="3" fill="#ef4444" 
-            />
-            <motion.circle 
-              animate={{ cy: [20, 160], opacity: [0, 1, 0] }}
-              transition={{ repeat: Infinity, duration: 1.2, ease: "easeIn", delay: 0.5 }}
-              cx="150" r="3" fill="#ef4444" 
-            />
-          </>
-        )}
+        <g className="animate-boat-bob" style={{ transformOrigin: '208px 150px' }}>
+          <path
+            d="M128 156 L286 156 L258 198 L154 198 Z"
+            fill="url(#shipHull)"
+            stroke="#c6a15b"
+            strokeWidth="2"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M142 166 L274 166"
+            stroke="rgba(243, 229, 204, 0.16)"
+            strokeWidth="2"
+            strokeLinecap="round"
+          />
+          <rect x="176" y="132" width="56" height="24" rx="6" fill="#162130" stroke="#c6a15b" />
+          <rect x="185" y="138" width="12" height="8" rx="2" fill="#6ea2a5" opacity="0.75" />
+          <rect x="202" y="138" width="12" height="8" rx="2" fill="#6ea2a5" opacity="0.75" />
+          <line x1="206" y1="66" x2="206" y2="156" stroke="#c6a15b" strokeWidth="3" />
+          <g className="animate-sail-flutter" style={{ transformOrigin: '206px 148px' }}>
+            <polygon points="206,72 258,148 206,154" fill="url(#sailLight)" stroke="#5d4a34" strokeWidth="1.4" />
+            <polygon points="206,82 170,145 206,154" fill="#ddd1b5" stroke="#5d4a34" strokeWidth="1.2" />
+          </g>
+          <polygon points="206,66 223,73 206,82" fill="#a4493d" />
 
+          {leakLabels.length > 0 && (
+            <>
+              <path
+                d="M126 102 C110 100 100 94 90 82"
+                stroke="#c6a15b"
+                strokeWidth="1.2"
+                strokeDasharray="5 5"
+                fill="none"
+              />
+              <text x="85" y="86" fill="#f3e5cc" fontSize="10" fontFamily="Arial, sans-serif" textAnchor="end">
+                {leakLabels[0]}
+              </text>
+            </>
+          )}
+
+          {leakLabels.length > 1 && (
+            <>
+              <path
+                d="M276 110 C300 106 316 98 330 88"
+                stroke="#c6a15b"
+                strokeWidth="1.2"
+                strokeDasharray="5 5"
+                fill="none"
+              />
+              <text x="335" y="90" fill="#f3e5cc" fontSize="10" fontFamily="Arial, sans-serif" textAnchor="start">
+                {leakLabels[1]}
+              </text>
+            </>
+          )}
+        </g>
+
+        <g>
+          <rect x="18" y="18" width="118" height="30" rx="15" fill="rgba(16,28,42,0.65)" stroke={statusColor} />
+          <text x="77" y="37" fill={statusColor} textAnchor="middle" fontSize="11" fontWeight="700" fontFamily="Arial, sans-serif">
+            {status === 'Floating' ? 'Hull steady' : status === 'Leaking' ? 'Leaks flagged' : 'Storm pressure'}
+          </text>
+        </g>
       </svg>
+
+      <div className="pointer-events-none absolute bottom-4 right-3 rounded-full border border-brass/18 bg-ink/65 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-brass">
+        Ship condition {healthScore}%
+      </div>
     </div>
   )
 }

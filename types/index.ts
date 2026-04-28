@@ -15,6 +15,20 @@ export type ChatMessage = {
   timestamp: number
 }
 
+export type UserProfile = {
+  name: string
+  role: string
+  incomeCadence: string
+}
+
+export type DemoOnboardingAnswers = {
+  name: string
+  role: string
+  incomeCadence: string
+  primaryGoal: string
+  pressurePoint: string
+}
+
 export type Leak = {
   id: string
   category: string
@@ -37,10 +51,39 @@ export type Goal = {
   isPriority?: boolean
 }
 
+export type SavingsAllocation = {
+  goalId: string
+  amount: number
+}
+
+export type SavingsEntry = {
+  id: string
+  amount: number
+  date: string
+  sourceNote: string
+  allocations: SavingsAllocation[]
+  createdBy: 'manual' | 'captain'
+}
+
+export type DailyCheckIn = {
+  date: string
+  totalSaved: number
+  completed: boolean
+  streakCount: number
+}
+
 export type AIAction =
   | { type: 'PATCH_LEAK'; id: string }
   | { type: 'PRIORITIZE_GOAL'; id: string }
   | { type: 'CONTRIBUTE_GOAL'; id: string; amount: number }
+  | {
+      type: 'LOG_SAVINGS'
+      amount: number
+      allocations: SavingsAllocation[]
+      sourceNote: string
+      createdBy?: 'manual' | 'captain'
+    }
+  | { type: 'COMPLETE_DAILY_CHECKIN' }
 
 export type StormWarning = {
   id: string
@@ -68,6 +111,7 @@ export type BoatHealth = {
 }
 
 export type AppState = {
+  userProfile: UserProfile
   currentBalance: number
   monthlyIncome: number
   monthlyExpenses: number
@@ -78,4 +122,6 @@ export type AppState = {
   storms: StormWarning[]
   boatHealth: BoatHealth
   transactions: Transaction[]
+  dailyCheckIn: DailyCheckIn
+  savingsEntries: SavingsEntry[]
 }

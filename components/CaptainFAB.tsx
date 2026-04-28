@@ -1,7 +1,5 @@
 'use client'
 
-import { Compass } from 'lucide-react'
-
 interface CaptainFABProps {
   onClick: () => void
 }

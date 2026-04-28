@@ -1,0 +1,11 @@
+  const appStateRef = useRef(appState)
+  useEffect(() => { appStateRef.current = appState }, [appState])
+
+  const getBody = useCallback(async () => {
+    return { userState: appStateRef.current }
+  }, []);
+
+  const transport = useMemo(
+    () => new DefaultChatTransport({ body: getBody }),
+    [getBody],
+  )

@@ -128,7 +128,7 @@
 
 @layer components {
   .font-display {
-    font-family: var(--font-display), Georgia, serif;
+    font-family: var(--font-sans);
   }
 
   .pirate-page {
@@ -183,8 +183,8 @@
 
 @layer utilities {
   @keyframes wave-flow {
-    0% { transform: translateX(0); }
-    100% { transform: translateX(-50%); }
+    0% { transform: translate3d(0, 0, 0); }
+    100% { transform: translate3d(-400px, 0, 0); }
   }
 
   @keyframes boat-bob {
@@ -213,19 +213,46 @@
     50% { opacity: 0.65; }
   }
 
-  .animate-wave-flow { animation: wave-flow 8s linear infinite; }
-  .animate-wave-flow-slow { animation: wave-flow 13s linear infinite; }
-  .animate-boat-bob { animation: boat-bob 3s ease-in-out infinite; }
-  .animate-drip { animation: drip 2s ease-in infinite; }
-  .animate-ring-pulse { animation: ring-pulse 2.5s ease-in-out infinite; }
-  .animate-sail-flutter { animation: sail-flutter 4s ease-in-out infinite; }
-  .animate-storm-pulse { animation: storm-pulse 1.5s ease-in-out infinite; }
+  .animate-wave-flow { animation: wave-flow 8s linear infinite; will-change: transform; }
+  .animate-wave-flow-slow { animation: wave-flow 13s linear infinite; will-change: transform; }
+  .animate-boat-bob { animation: boat-bob 3s ease-in-out infinite; will-change: transform; }
+  .animate-drip { animation: drip 2s ease-in infinite; will-change: transform, opacity; }
+  .animate-ring-pulse { animation: ring-pulse 2.5s ease-in-out infinite; will-change: filter; }
+  .animate-sail-flutter { animation: sail-flutter 4s ease-in-out infinite; will-change: transform; }
+  .animate-storm-pulse { animation: storm-pulse 1.5s ease-in-out infinite; will-change: opacity; }
 
   .pb-safe { padding-bottom: max(1.75rem, env(safe-area-inset-bottom)); }
   .pt-safe { padding-top: max(0px, env(safe-area-inset-top)); }
 
   .scrollbar-hide { scrollbar-width: none; }
   .scrollbar-hide::-webkit-scrollbar { display: none; }
+
+  /* Native Number Spinner Resets */
+  input[type=number]::-webkit-inner-spin-button,
+  input[type=number]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type=number] {
+    -moz-appearance: textfield;
+  }
+
+  /* Custom Pirate Scrollbar */
+  .scrollbar-pirate::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .scrollbar-pirate::-webkit-scrollbar-track {
+    background: hsl(var(--ink) / 0.5);
+    border-radius: 4px;
+  }
+  .scrollbar-pirate::-webkit-scrollbar-thumb {
+    background: hsl(var(--brass) / 0.4);
+    border-radius: 4px;
+  }
+  .scrollbar-pirate::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--brass) / 0.7);
+  }
 
   /* Screen slide transitions */
   @keyframes slideFromRight {

@@ -1,186 +1,199 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Send, Loader2, Compass } from 'lucide-react'
+import { Compass, Loader2, Send } from 'lucide-react'
 import { useChat } from '@ai-sdk/react'
-import { generateMockSuggestion, parseAIAction } from '@/lib/mock-responses'
 import { AI_CONFIG } from '@/lib/ai-config'
-import type { AIAction, ChatMessage } from '@/types'
+import { generateMockSuggestion, parseAIAction } from '@/lib/mock-responses'
+import { CaptainBenjaminPortrait } from '@/components/illustrations/CaptainBenjaminPortrait'
+import type { AIAction, AppState, ChatMessage } from '@/types'
 
 const QUICK_PROMPTS = [
-  "Patch food delivery leak",
-  "Focus on Emergency Reserve",
-  "Chart this week's leaks",
-  "What storm hits first?",
-  "How much can I safely spend?",
-]
+  'I saved P50 today',
+  'What storm should I watch first?',
+  'Where should my next savings go?',
+  'What leak should I patch this week?',
+  'How much can I safely spend today?',
+] as const
 
 interface CaptainChatScreenProps {
   onStateUpdate?: (action: AIAction) => void
+  appState?: AppState
 }
 
-export function CaptainChatScreen({ onStateUpdate }: CaptainChatScreenProps) {
+function getTextContent(message: { content?: string; parts?: Array<{ type: string; text?: string }> }) {
+  if (typeof message.content === 'string') return message.content
+  return (
+    message.parts
+      ?.filter((part) => part.type === 'text')
+      .map((part) => part.text ?? '')
+      .join('') ?? ''
+  )
+}
+
+export function CaptainChatScreen({ onStateUpdate, appState }: CaptainChatScreenProps) {
   const [mockMessages, setMockMessages] = useState<ChatMessage[]>([
     {
-      id: '0',
+      id: 'welcome',
       role: 'assistant',
       content:
-        'Welcome aboard. I am Capt. Benjamin. Hand me the ledger, and I will chart the cleanest course through your spending, storms, and savings.',
+        'Start with today. Tell me what you saved, what storm is closest, or which goal deserves first claim on your next spare peso.',
       timestamp: 0,
     },
   ])
   const [input, setInput] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
+  const [isMockLoading, setIsMockLoading] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const pendingActionRef = useRef<AIAction | undefined>(undefined)
+  const mockCounterRef = useRef(1)
   const { messages: aiMessages, sendMessage, status, error } = useChat()
 
-  const messages = AI_CONFIG.useMockMode ? mockMessages : aiMessages
   const isAiLoading = status === 'submitted' || status === 'streaming'
+  const isBusy = AI_CONFIG.useMockMode ? isMockLoading : isAiLoading
+  const messages = AI_CONFIG.useMockMode ? mockMessages : aiMessages
+  const userName = appState?.userProfile.name ?? 'Captain'
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+  }, [isBusy, messages])
 
-  const handleSendMock = async () => {
-    if (!input.trim()) return
-
-    const userMessage: ChatMessage = {
-      id: Date.now().toString(),
-      role: 'user',
-      content: input,
-      timestamp: Date.now(),
-    }
-
-    setMockMessages(prev => [...prev, userMessage])
-    setInput('')
-    setIsLoading(true)
-
-    await new Promise(resolve => setTimeout(resolve, 800))
-
-    const result = generateMockSuggestion(userMessage.content)
-    const assistantMessage: ChatMessage = {
-      id: (Date.now() + 1).toString(),
-      role: 'assistant',
-      content: result.text,
-      timestamp: Date.now(),
-    }
-
-    setMockMessages(prev => [...prev, assistantMessage])
-    setIsLoading(false)
-
-    if (result.action) {
-      setTimeout(() => onStateUpdate?.(result.action!), 600)
-    }
-  }
-
-  const handleSendAI = async () => {
-    if (!input.trim()) return
-    const nextInput = input
-    setInput('')
-    await sendMessage({ text: nextInput })
-  }
-
-  // For live AI: scan response for action keywords after streaming completes
   useEffect(() => {
     if (AI_CONFIG.useMockMode) return
     if (status !== 'ready' || aiMessages.length === 0) return
-    const last = aiMessages[aiMessages.length - 1]
-    if (last.role !== 'assistant') return
-    const text = last.parts?.filter(p => p.type === 'text').map(p => p.text).join('') ?? ''
-    const action = parseAIAction(text)
-    if (action) onStateUpdate?.(action)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status])
 
-  const handleSend = AI_CONFIG.useMockMode ? handleSendMock : handleSendAI
+    const lastMessage = aiMessages[aiMessages.length - 1]
+    if (lastMessage.role !== 'assistant') return
 
-  const renderMessageContent = (message: typeof aiMessages[number] | ChatMessage) => {
-    if ('content' in message) return message.content
-    const text = message.parts
-      .filter(part => part.type === 'text')
-      .map(part => part.text)
-      .join('')
-    return text || '...'
+    const assistantText = getTextContent(lastMessage)
+    const parsedAssistantAction = parseAIAction(assistantText)
+    const actionToApply = parsedAssistantAction ?? pendingActionRef.current
+    if (actionToApply) {
+      onStateUpdate?.(actionToApply)
+      pendingActionRef.current = undefined
+    }
+  }, [aiMessages, onStateUpdate, status])
+
+  const sendMockMessage = async (text: string) => {
+    mockCounterRef.current += 1
+    const userCounter = mockCounterRef.current
+    const userMessage: ChatMessage = {
+      id: `mock-user-${userCounter}`,
+      role: 'user',
+      content: text,
+      timestamp: userCounter,
+    }
+
+    setMockMessages((prev) => [...prev, userMessage])
+    setIsMockLoading(true)
+
+    await new Promise((resolve) => setTimeout(resolve, 700))
+
+    const result = generateMockSuggestion(text)
+    mockCounterRef.current += 1
+    const replyCounter = mockCounterRef.current
+    setMockMessages((prev) => [
+      ...prev,
+      {
+        id: `mock-assistant-${replyCounter}`,
+        role: 'assistant',
+        content: result.text,
+        timestamp: replyCounter,
+      },
+    ])
+    setIsMockLoading(false)
+
+    if (result.action) {
+      onStateUpdate?.(result.action)
+    }
+  }
+
+  const sendLiveMessage = async (text: string) => {
+    pendingActionRef.current = parseAIAction(text)
+    await sendMessage({ text }, { body: { userState: appState } })
+  }
+
+  const handleSend = async (preset?: string) => {
+    const nextMessage = (preset ?? input).trim()
+    if (!nextMessage) return
+
+    setInput('')
+
+    if (AI_CONFIG.useMockMode) {
+      await sendMockMessage(nextMessage)
+      return
+    }
+
+    await sendLiveMessage(nextMessage)
   }
 
   return (
-    <div className="flex h-[calc(100vh-74px)] flex-col bg-navy pirate-page">
-      {/* Captain header */}
-      <div className="sticky top-0 z-10 border-b border-brass/15 bg-ink/92 px-4 py-4 backdrop-blur-md">
+    <div className="flex h-[100dvh] flex-col bg-navy pirate-page lg:h-full">
+      <div className="sticky top-0 z-10 border-b border-brass/12 bg-ink/90 px-4 py-4 backdrop-blur-md">
         <div className="flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full border border-brass/35 bg-wood text-brass shadow-lg shadow-black/30">
-            <span className="font-display text-lg font-semibold">CB</span>
-          </div>
-          <div>
-            <p className="pirate-kicker">Quartermaster AI</p>
-            <h1 className="font-display text-2xl font-semibold text-bone">Capt. Benjamin</h1>
-            <div className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-teal animate-pulse" />
-              <p className="text-xs text-sand/70">Charting a trustworthy course through your ledger</p>
-            </div>
+          <CaptainBenjaminPortrait className="h-14 w-14 overflow-hidden rounded-full border border-brass/25" compact />
+          <div className="min-w-0">
+            <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-teal">Capt. Benjamin</p>
+            <h1 className="mt-1 text-xl font-semibold text-bone">Quartermaster for {userName}</h1>
+            <p className="mt-1 text-xs leading-5 text-sand/68">Ask about today&apos;s savings, your next storm, or the leak worth patching first.</p>
           </div>
         </div>
       </div>
 
-      {/* Quick prompts */}
-      <div className="flex gap-2 overflow-x-auto scrollbar-hide px-4 py-3 flex-shrink-0">
-        {QUICK_PROMPTS.map(prompt => (
+      <div className="flex shrink-0 gap-2 overflow-x-auto px-4 py-3 scrollbar-hide">
+        {QUICK_PROMPTS.map((prompt) => (
           <button
             key={prompt}
-            onClick={() => setInput(prompt)}
-            className="shrink-0 rounded-full border border-brass/20 bg-wood-light/45 px-4 py-2 text-xs font-semibold text-sand transition-colors active:bg-wood-light/70 whitespace-nowrap"
+            onClick={() => void handleSend(prompt)}
+            className="shrink-0 rounded-full border border-brass/18 bg-wood-light/40 px-4 py-2 text-xs font-semibold text-sand transition-colors active:bg-wood-light/70"
           >
             {prompt}
           </button>
         ))}
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
-        {messages.map(message => (
-          <div
-            key={message.id}
-            className={`flex gap-2 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-          >
-            {message.role === 'assistant' && (
-              <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-brass/30 bg-wood text-brass">
-                <Compass className="h-4 w-4" />
+      <div className="flex-1 space-y-4 overflow-y-auto px-4 pt-4 pb-8 scrollbar-pirate">
+        {messages.map((message) => {
+          const text = getTextContent(message)
+          const isUser = message.role === 'user'
+
+          return (
+            <div key={message.id} className={`flex gap-2 ${isUser ? 'justify-end' : 'justify-start'}`}>
+              {!isUser && (
+                <CaptainBenjaminPortrait className="mt-1 h-8 w-8 shrink-0 overflow-hidden rounded-full border border-brass/25" compact />
+              )}
+              <div className={`max-w-[84%] ${isUser ? 'items-end' : 'items-start'} flex flex-col`}>
+                {!isUser && (
+                  <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-brass">
+                    Capt. Benjamin
+                  </p>
+                )}
+                <div
+                  className={`rounded-[24px] px-4 py-3 ${
+                    isUser
+                      ? 'rounded-tr-md bg-brass text-ink'
+                      : 'rounded-tl-md border border-brass/12 bg-ink/48 text-bone'
+                  }`}
+                >
+                  <p className="whitespace-pre-wrap text-sm leading-relaxed">{text || '...'}</p>
+                </div>
               </div>
-            )}
-            <div
-              className={`max-w-[80%] rounded-[22px] px-4 py-3 ${
-                message.role === 'user'
-                  ? 'bg-brass text-ink rounded-tr-md'
-                  : 'pirate-panel-soft text-bone rounded-tl-md'
-              }`}
-            >
-              <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                {renderMessageContent(message)}
-              </p>
             </div>
-          </div>
-        ))}
+          )
+        })}
 
         {!AI_CONFIG.useMockMode && error && (
-          <div className="flex justify-start gap-2">
-            <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-coral/35 bg-coral/10 text-coral">
-              <Compass className="h-4 w-4" />
-            </div>
-            <div className="max-w-[80%] rounded-[22px] rounded-tl-md border border-coral/35 bg-coral/10 px-4 py-3 text-coral">
-              <p className="text-sm">Rough signal. Capt. Benjamin could not reach the live service just now.</p>
-            </div>
+          <div className="rounded-[24px] border border-coral/30 bg-coral/10 px-4 py-3 text-sm text-coral">
+            Capt. Benjamin could not reach the live service just now.
           </div>
         )}
 
-        {(AI_CONFIG.useMockMode ? isLoading : isAiLoading) && (
+        {isBusy && (
           <div className="flex justify-start gap-2">
-            <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-brass/30 bg-wood text-brass">
-              <Compass className="h-4 w-4" />
-            </div>
-            <div className="rounded-[22px] rounded-tl-md pirate-panel-soft px-4 py-3">
-              <div className="flex items-center gap-2">
+            <CaptainBenjaminPortrait className="mt-1 h-8 w-8 shrink-0 overflow-hidden rounded-full border border-brass/25" compact />
+            <div className="rounded-[24px] rounded-tl-md border border-brass/12 bg-ink/48 px-4 py-3">
+              <div className="flex items-center gap-2 text-sm text-sand/75">
                 <Loader2 className="h-4 w-4 animate-spin text-brass" />
-                <span className="text-sm text-sand/75">Capt. Benjamin is checking the charts…</span>
+                Capt. Benjamin is checking the charts.
               </div>
             </div>
           </div>
@@ -189,37 +202,35 @@ export function CaptainChatScreen({ onStateUpdate }: CaptainChatScreenProps) {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
-      <div className="sticky bottom-0 border-t border-brass/15 bg-ink/92 px-4 py-3 pb-safe backdrop-blur-md flex-shrink-0">
+      <div className="shrink-0 border-t border-brass/12 bg-ink/92 px-4 pt-3 pb-[max(12px,env(safe-area-inset-bottom))] backdrop-blur-md">
         {AI_CONFIG.useMockMode && (
-          <p className="mb-2 text-center text-xs text-sand/60">
-            Demo mode · Set NEXT_PUBLIC_APP_MODE=live for live guidance
-          </p>
+          <p className="mb-2 text-center text-xs text-sand/60">Demo mode. Set `NEXT_PUBLIC_APP_MODE=live` to use the live assistant.</p>
         )}
         <div className="flex items-center gap-3">
-          <input
-            type="text"
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={e => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault()
-                void handleSend()
-              }
-            }}
-            placeholder="Hand over the next question from your ledger…"
-            className="flex-1 rounded-full border border-brass/18 bg-wood-light/40 px-4 py-3 text-sm text-bone placeholder:text-sand/45 focus:border-brass focus:outline-none focus:ring-1 focus:ring-brass"
-            disabled={AI_CONFIG.useMockMode ? isLoading : isAiLoading}
-          />
+          <div className="flex flex-1 items-center gap-2 rounded-full border border-brass/18 bg-wood-light/35 px-4">
+            <Compass className="h-4 w-4 shrink-0 text-brass" />
+            <input
+              type="text"
+              value={input}
+              onChange={(event) => setInput(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' && !event.shiftKey) {
+                  event.preventDefault()
+                  void handleSend()
+                }
+              }}
+              placeholder="Benjamin, where should I steer today?"
+              className="h-12 w-full bg-transparent text-sm text-bone placeholder:text-sand/42 focus:outline-none"
+              disabled={isBusy}
+            />
+          </div>
           <button
-            onClick={() => { void handleSend() }}
-            disabled={(AI_CONFIG.useMockMode ? isLoading : isAiLoading) || !input.trim()}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brass text-ink shadow-lg transition-transform active:scale-90 disabled:cursor-not-allowed disabled:opacity-50"
+            onClick={() => void handleSend()}
+            disabled={isBusy || !input.trim()}
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brass text-ink shadow-lg transition-transform active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+            aria-label="Send message"
           >
-            {(AI_CONFIG.useMockMode ? isLoading : isAiLoading)
-              ? <Loader2 className="h-5 w-5 animate-spin" />
-              : <Send className="h-4 w-4" />
-            }
+            {isBusy ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-4 w-4" />}
           </button>
         </div>
       </div>

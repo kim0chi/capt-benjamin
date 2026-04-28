@@ -1,159 +1,199 @@
-import type { AIAction } from '@/types'
+import type { AIAction, SavingsAllocation } from '@/types'
 
-const responses: Record<string, string[]> = {
+const GOALS = [
+  { id: '1', name: 'Emergency Reserve', aliases: ['emergency', 'reserve', 'emergency reserve'] },
+  { id: '2', name: 'Tuition Chest', aliases: ['tuition', 'school', 'tuition chest'] },
+  { id: '3', name: 'New Phone Bounty', aliases: ['phone', 'new phone', 'phone bounty'] },
+  { id: '4', name: 'Debt Payoff', aliases: ['debt', 'loan', 'payoff', 'debt payoff'] },
+] as const
+
+const FALLBACK_RESPONSES = {
   budget: [
-    'Your provisions budget is holding steady. Keep an eye on weekend spending so it does not spring a leak.',
-    'Entertainment costs are drifting upward. Trim a little there and your reserves will look healthier.',
-    'Dining spending is under control. Staying below target gives you more room for bounty elsewhere.',
-    'Transport costs look routine this week. No rough waters there.',
+    'Keep today simple: log what you saved, protect your next bill, and avoid one repeat leak.',
+    'The cleanest plan is the one you can repeat tomorrow. Save a small amount first, then spend from what remains.',
   ],
   spending: [
-    'Coffee spending has become a frequent leak. A few home-brew mornings would patch it quickly.',
-    'Online shopping is up compared with last month. Worth checking whether that drift was planned.',
-    'Utilities eased off this month. Good sign that your recent adjustments are working.',
-    'Meal prep spending is up, but dining out is down. That is usually a profitable trade.',
+    'Your strongest leak to watch is still convenience spending. Patch one repeat habit and move that amount into a goal.',
+    'When money feels tight, the best move is usually smaller daily waste, not one dramatic cut.',
   ],
   savings: [
-    'You are on pace to stash a solid share of income this month. Hold the course.',
-    'Keep this savings rate and your emergency reserve should fill out within a few months.',
-    'Treasure kept today buys freedom later. The steady captains win in the long run.',
-    "Your current pace makes this quarter's goal feel very reachable.",
-  ],
-  goals: [
-    'Based on your ledger, I would focus on subscriptions, meal planning, and automatic transfers first.',
-    'Your overall financial condition is improving. The fundamentals look steadier than before.',
-    'Trim a small portion of discretionary spending and your voyage to the goal shortens meaningfully.',
-    'The habits are forming well. Keep tracking, keep adjusting, and the destination stays within reach.',
+    'Small cargo moved every day beats a perfect plan that never leaves harbor.',
+    'If the amount is small, that is fine. The habit matters more than the size of one entry.',
   ],
   default: [
-    'A fair question. Give me a little more context and I will chart the clearest course.',
-    'Focus first on what you can measure, what you can cut, and what you can automate.',
-    'That is a useful observation. The next step is turning it into a repeatable money habit.',
-    'Let us chart this properly. Tell me the exact concern and I will break it down plainly.',
+    'Tell me what you saved today, where you placed it, or which goal needs the next push.',
+    'Give me the amount and destination, and I will chart the next step clearly.',
   ],
+} as const
+
+function randomItem(items: readonly string[]) {
+  return items[Math.floor(Math.random() * items.length)]
 }
 
-export function getMockResponse(topic: string): string {
-  const topicKey = (topic.toLowerCase() as keyof typeof responses) || 'default'
-  const topicResponses = responses[topicKey] || responses.default
-  return topicResponses[Math.floor(Math.random() * topicResponses.length)]
-}
-
-export function generateMockInsights() {
-  return [
-    {
-      id: '1',
-      title: 'Treasure Reserve on Course',
-      description:
-        'Savings are moving faster than target this month, which gives the voyage more flexibility.',
-      actionItems: ['Keep the same pace this week', 'Consider increasing reserve targets next month'],
-      type: 'success' as const,
-    },
-    {
-      id: '2',
-      title: 'Coffee Leak Needs Patching',
-      description:
-        'Coffee and beverage spending is climbing fast enough to become a recurring hull leak.',
-      actionItems: ['Brew at home three days this week', 'Track every small drink purchase for seven days'],
-      type: 'warning' as const,
-    },
-    {
-      id: '3',
-      title: 'Galley Strategy Is Working',
-      description:
-        'Meal prep costs are up, but dining out is down. The trade still favors your ledger.',
-      actionItems: ['Keep the prep routine going', 'Redirect the difference into a goal fund'],
-      type: 'info' as const,
-    },
-  ]
-}
-
-export function parseAIAction(text: string): AIAction | undefined {
+function findGoalByText(text: string) {
   const lower = text.toLowerCase()
-  if (lower.includes('patch') && (lower.includes('food') || lower.includes('delivery'))) {
-    return { type: 'PATCH_LEAK', id: '1' }
+  return GOALS.find((goal) => goal.aliases.some((alias) => lower.includes(alias)))
+}
+
+function findGoalName(goalId: string) {
+  return GOALS.find((goal) => goal.id === goalId)?.name ?? 'Goal'
+}
+
+function parseAmountToken(value: string) {
+  const cleaned = value.replace(/[^0-9.]/g, '')
+  const amount = Number(cleaned)
+  return Number.isFinite(amount) ? Math.round(amount) : 0
+}
+
+function parseSavingsAllocations(text: string) {
+  const lower = text.toLowerCase()
+  const allocations: SavingsAllocation[] = []
+  const seen = new Set<string>()
+  const patterns = [
+    /(?:p|php|₱)?\s*(\d+(?:\.\d+)?)\s*(?:to|for|into)\s+([a-z ]+?)(?=,| and |$)/g,
+    /([a-z ]+?)\s*(?:gets|get|take|takes)\s*(?:p|php|₱)?\s*(\d+(?:\.\d+)?)/g,
+  ]
+
+  for (const pattern of patterns) {
+    pattern.lastIndex = 0
+    let match: RegExpExecArray | null
+    while ((match = pattern.exec(lower)) !== null) {
+      const amount = parseAmountToken(match[1])
+      const label = pattern === patterns[0] ? match[2] : match[1]
+      const goal = findGoalByText(label)
+      if (!goal || amount <= 0) continue
+      const key = `${goal.id}-${amount}-${match.index}`
+      if (seen.has(key)) continue
+      seen.add(key)
+      allocations.push({ goalId: goal.id, amount })
+    }
   }
-  if (lower.includes('patch') && lower.includes('coffee')) {
-    return { type: 'PATCH_LEAK', id: '2' }
+
+  return allocations
+}
+
+function parseSavingsAction(text: string): AIAction | undefined {
+  const lower = text.toLowerCase()
+  const looksLikeSavingsLog =
+    /(saved|save|set aside|stash|logged|log|put away|put into)/.test(lower) &&
+    /\d/.test(lower)
+
+  if (!looksLikeSavingsLog) return undefined
+
+  const amounts = [...lower.matchAll(/(?:p|php|₱)?\s*(\d+(?:\.\d+)?)/g)]
+    .map((match) => parseAmountToken(match[1]))
+    .filter((amount) => amount > 0)
+
+  if (amounts.length === 0) return undefined
+
+  const totalAmount = amounts[0]
+  const parsedAllocations = parseSavingsAllocations(text)
+  const allocations =
+    parsedAllocations.length > 0
+      ? parsedAllocations
+      : [{ goalId: findGoalByText(text)?.id ?? '1', amount: totalAmount }]
+
+  return {
+    type: 'LOG_SAVINGS',
+    amount: totalAmount,
+    allocations,
+    sourceNote: 'Captain chat check-in',
+    createdBy: 'captain',
   }
-  if (lower.includes('patch') && lower.includes('stream')) {
-    return { type: 'PATCH_LEAK', id: '3' }
+}
+
+function parseGoalPriorityAction(text: string): AIAction | undefined {
+  const lower = text.toLowerCase()
+  if (!/(prioritize|focus on|set course|make .*priority|all into)/.test(lower)) {
+    return undefined
   }
-  if ((lower.includes('prioritize') || lower.includes('focus on') || lower.includes('course')) &&
-      (lower.includes('emergency') || lower.includes('reserve'))) {
-    return { type: 'PRIORITIZE_GOAL', id: '1' }
-  }
-  if ((lower.includes('prioritize') || lower.includes('focus on')) && lower.includes('tuition')) {
-    return { type: 'PRIORITIZE_GOAL', id: '2' }
-  }
-  if ((lower.includes('prioritize') || lower.includes('focus on')) && lower.includes('phone')) {
-    return { type: 'PRIORITIZE_GOAL', id: '3' }
-  }
-  if ((lower.includes('prioritize') || lower.includes('focus on')) && lower.includes('debt')) {
-    return { type: 'PRIORITIZE_GOAL', id: '4' }
-  }
+
+  const goal = findGoalByText(text)
+  return goal ? { type: 'PRIORITIZE_GOAL', id: goal.id } : undefined
+}
+
+function parseLeakAction(text: string): AIAction | undefined {
+  const lower = text.toLowerCase()
+  if (!/(patch|fix|cut|stop)/.test(lower)) return undefined
+  if (/(food|delivery|takeout)/.test(lower)) return { type: 'PATCH_LEAK', id: '1' }
+  if (/(coffee|cafe)/.test(lower)) return { type: 'PATCH_LEAK', id: '2' }
+  if (/(stream|subscription|netflix)/.test(lower)) return { type: 'PATCH_LEAK', id: '3' }
   return undefined
 }
 
+export function parseAIAction(text: string): AIAction | undefined {
+  return parseSavingsAction(text) ?? parseGoalPriorityAction(text) ?? parseLeakAction(text)
+}
+
+function buildSavingsReply(action: Extract<AIAction, { type: 'LOG_SAVINGS' }>) {
+  const allocationText = action.allocations
+    .map((allocation) => `P${allocation.amount} to ${findGoalName(allocation.goalId)}`)
+    .join(', ')
+
+  const dominantGoal = action.allocations[0]
+  const dominantGoalName = dominantGoal ? findGoalName(dominantGoal.goalId) : 'your main goal'
+
+  return `Logged. I marked P${action.amount} saved today and charted ${allocationText}. That moves ${dominantGoalName} closer without waiting for a perfect amount tomorrow.`
+}
+
 export function generateMockSuggestion(userMessage: string): { text: string; action?: AIAction } {
+  const action = parseAIAction(userMessage)
   const lower = userMessage.toLowerCase()
 
-  if ((lower.includes('patch') || lower.includes('fix')) && (lower.includes('food') || lower.includes('delivery'))) {
+  if (action?.type === 'LOG_SAVINGS') {
     return {
-      text: "Logged, Captain. The food delivery leak is marked for patching — that plugs ₱640 from draining the hull every week. Your ship condition just improved. 🔧",
-      action: { type: 'PATCH_LEAK', id: '1' },
-    }
-  }
-  if ((lower.includes('patch') || lower.includes('fix')) && lower.includes('coffee')) {
-    return {
-      text: "Done. The coffee leak is sealed. ☕ ₱380 per week stays aboard. A simple home brew kit pays for itself in fewer than three weeks.",
-      action: { type: 'PATCH_LEAK', id: '2' },
-    }
-  }
-  if ((lower.includes('patch') || lower.includes('fix')) && lower.includes('stream')) {
-    return {
-      text: "Streaming subscriptions trimmed. ₱220 per month back in the ledger. Check each service quarterly to keep this leak closed.",
-      action: { type: 'PATCH_LEAK', id: '3' },
-    }
-  }
-  if ((lower.includes('prioritize') || lower.includes('focus') || lower.includes('set course')) &&
-      (lower.includes('emergency') || lower.includes('reserve'))) {
-    return {
-      text: "Course set for Emergency Reserve Island. 🧭 All weekly contributions now route there first. At ₱450 per week, landfall is about 8 weeks out.",
-      action: { type: 'PRIORITIZE_GOAL', id: '1' },
-    }
-  }
-  if ((lower.includes('prioritize') || lower.includes('focus')) && lower.includes('tuition')) {
-    return {
-      text: "Charting course for Tuition Island. 🎓 Long voyage ahead — consistency matters more than speed here. Avoid new subscriptions this month.",
-      action: { type: 'PRIORITIZE_GOAL', id: '2' },
-    }
-  }
-  if ((lower.includes('prioritize') || lower.includes('focus')) && lower.includes('phone')) {
-    return {
-      text: "New Phone Bounty set as priority destination. 📱 At ₱350 per week, you arrive in roughly 16 weeks. Patch one leak to shorten the voyage.",
-      action: { type: 'PRIORITIZE_GOAL', id: '3' },
-    }
-  }
-  if ((lower.includes('prioritize') || lower.includes('focus')) && lower.includes('debt')) {
-    return {
-      text: "Debt Payoff Island is now your primary target. 🏦 ₱600 per week gets you there in about 17 weeks. Fewer storms, more breathing room.",
-      action: { type: 'PRIORITIZE_GOAL', id: '4' },
+      text: buildSavingsReply(action),
+      action,
     }
   }
 
-  if (lower.includes('budget') || lower.includes('limit')) {
-    return { text: getMockResponse('budget') }
-  }
-  if (lower.includes('spend') || lower.includes('expense') || lower.includes('leak')) {
-    return { text: getMockResponse('spending') }
-  }
-  if (lower.includes('save') || lower.includes('goal') || lower.includes('island') || lower.includes('treasure')) {
-    return { text: getMockResponse('savings') }
-  }
-  if (lower.includes('advice') || lower.includes('help') || lower.includes('course')) {
-    return { text: getMockResponse('goals') }
+  if (action?.type === 'PRIORITIZE_GOAL') {
+    return {
+      text: `Course updated. I moved your main attention to ${findGoalName(action.id)} so the next savings log points there first.`,
+      action,
+    }
   }
 
-  return { text: getMockResponse('default') }
+  if (action?.type === 'PATCH_LEAK') {
+    const leakName =
+      action.id === '1' ? 'food delivery' : action.id === '2' ? 'coffee runs' : 'unused subscriptions'
+    return {
+      text: `Marked. ${leakName} is the leak to patch next, which frees more room for tomorrow's savings check-in.`,
+      action,
+    }
+  }
+
+  if (/(safe spend|safely spend|how much can i spend)/.test(lower)) {
+    return {
+      text: 'Spend only after the savings log is done. Protect today’s set-aside first, then keep optional spending inside the safe amount shown on home.',
+    }
+  }
+
+  if (/(storm|bill|due)/.test(lower)) {
+    return {
+      text: 'Watch the nearest storm first. Clear the next bill before sending extra cargo to lower-priority goals.',
+    }
+  }
+
+  if (/(save|goal|check-in|streak)/.test(lower)) {
+    return {
+      text: randomItem(FALLBACK_RESPONSES.savings),
+    }
+  }
+
+  if (/(spend|expense|leak)/.test(lower)) {
+    return {
+      text: randomItem(FALLBACK_RESPONSES.spending),
+    }
+  }
+
+  if (/(budget|plan|weekly)/.test(lower)) {
+    return {
+      text: randomItem(FALLBACK_RESPONSES.budget),
+    }
+  }
+
+  return {
+    text: randomItem(FALLBACK_RESPONSES.default),
+  }
 }

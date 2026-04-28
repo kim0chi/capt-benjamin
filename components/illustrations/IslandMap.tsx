@@ -17,6 +17,7 @@ export function IslandMap({
 }: IslandMapProps) {
   const clampedProgress = Math.min(100, Math.max(0, progressPercent))
   const markerX = 64 + (clampedProgress / 100) * 190
+  const fontFamily = 'var(--font-sans), ui-sans-serif, system-ui, sans-serif'
 
   return (
     <div className={cn('overflow-hidden rounded-[28px] pirate-note', className)}>
@@ -80,16 +81,16 @@ export function IslandMap({
         <line x1="306" y1="108" x2="320" y2="122" stroke="#a4493d" strokeWidth="3" />
         <line x1="320" y1="108" x2="306" y2="122" stroke="#a4493d" strokeWidth="3" />
 
-        <text x="24" y="28" fontSize="11" fill="#7c6040" fontFamily="Arial, sans-serif" letterSpacing="2">
+        <text x="24" y="28" fontSize="11" fill="#7c6040" fontFamily={fontFamily} letterSpacing="2">
           TREASURE CHART
         </text>
-        <text x="302" y="150" textAnchor="middle" fontSize="13" fill="#2a2117" fontFamily="Georgia, serif" fontWeight="700">
+        <text x="302" y="150" textAnchor="middle" fontSize="13" fill="#2a2117" fontFamily={fontFamily} fontWeight="700">
           {goalName}
         </text>
-        <text x="302" y="165" textAnchor="middle" fontSize="10" fill="#6b5a44" fontFamily="Arial, sans-serif">
+        <text x="302" y="165" textAnchor="middle" fontSize="10" fill="#6b5a44" fontFamily={fontFamily}>
           P{amountRemaining.toLocaleString()} still to recover
         </text>
-        <text x={markerX} y="158" textAnchor="middle" fontSize="10" fill="#7c6040" fontFamily="Arial, sans-serif" fontWeight="700">
+        <text x={markerX} y="158" textAnchor="middle" fontSize="10" fill="#7c6040" fontFamily={fontFamily} fontWeight="700">
           {clampedProgress}%
         </text>
       </svg>
