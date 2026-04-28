@@ -3,8 +3,8 @@
 import { useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { BottomNavigation, type NavTab } from '@/components/BottomNavigation'
-import { SidebarNavigation } from '@/components/SidebarNavigation'
 import { CaptainHeader } from '@/components/CaptainHeader'
+import { DesktopTopNav } from '@/components/DesktopTopNav'
 import { DashboardScreen } from '@/components/screens/DashboardScreen'
 import { IslandScreen } from '@/components/screens/InsightsScreen'
 import { CaptainChatScreen } from '@/components/screens/CaptainChatScreen'
@@ -29,6 +29,7 @@ export default function Home() {
   const [slideDir, setSlideDir] = useState<'left' | 'right'>('right')
   const [chatOpen, setChatOpen] = useState(false)
   const touchStartX = useRef(0)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
 
   const {
     state,
@@ -207,20 +208,19 @@ export default function Home() {
       transition={{ duration: 0.42, ease: [0.16, 1, 0.3, 1] }}
       className="flex h-screen w-full overflow-hidden bg-navy text-foreground pirate-page"
     >
-      {subView === 'none' && (
-        <SidebarNavigation
-          activeTab={activeTab}
-          onTabChange={navigateToTab}
-          onProfileTap={() => setSubView('profile')}
-        />
-      )}
+      <DesktopTopNav
+        activeTab={activeTab}
+        onTabChange={navigateToTab}
+        onProfileTap={() => setSubView('profile')}
+      />
 
       <div className="relative flex h-full w-full flex-1 flex-col overflow-hidden lg:max-w-none">
         {subView === 'none' && (
           <CaptainHeader
-            captainNote={captainNote}
-            onExpandChat={() => setChatOpen(true)}
+            firstName={firstName}
             onProfileTap={() => setSubView('profile')}
+            onChat={() => setChatOpen(true)}
+            scrollContainerRef={scrollContainerRef}
           />
         )}
 
@@ -233,16 +233,26 @@ export default function Home() {
             transition={{ duration: 0.25, ease: 'easeOut' }}
             onTouchStart={subView === 'none' ? handleTouchStart : undefined}
             onTouchEnd={subView === 'none' ? handleTouchEnd : undefined}
-            className={`flex-1 overflow-x-hidden overflow-y-auto ${subView === 'none' ? 'pt-24 pb-24 md:pb-6 lg:pt-6' : ''}`}
+            ref={scrollContainerRef}
+            className={`flex-1 overflow-x-hidden overflow-y-auto ${subView === 'none' ? 'pt-24 pb-28 md:pb-6 lg:pt-24' : ''}`}
           >
-            <div className="mx-auto h-full w-full max-w-7xl lg:px-6">{renderScreen()}</div>
+            <div className="h-full w-full lg:px-6">
+              {subView === 'none' && activeTab === 'home' && (
+                <div className="hidden lg:block pb-2 pt-2">
+                  <h1 className="text-4xl font-bold tracking-tight text-foreground">Hi, {firstName} 👋</h1>
+                </div>
+              )}
+              {renderScreen()}
+            </div>
           </motion.div>
         </AnimatePresence>
 
         {subView === 'none' && (
-          <div className="md:hidden">
-            <BottomNavigation activeTab={activeTab} onTabChange={navigateToTab} />
-          </div>
+          <BottomNavigation
+            activeTab={activeTab}
+            onTabChange={navigateToTab}
+            onProfileTap={() => setSubView('profile')}
+          />
         )}
 
         <AnimatePresence>
@@ -271,9 +281,11 @@ export default function Home() {
       </div>
 
       {subView === 'none' && (
-        <aside className="relative z-40 hidden h-full w-[350px] shrink-0 flex-col border-l border-brass/10 bg-ink lg:flex xl:w-[400px]">
-          <div className="h-full flex-1 overflow-hidden">
-            <CaptainChatScreen onStateUpdate={handleAIAction} appState={state} />
+        <aside className="hidden lg:flex w-[460px] xl:w-[500px] shrink-0 flex-col h-full py-5 pr-5">
+          <div className="flex-1 overflow-hidden rounded-2xl bg-card shadow-lg ring-1 ring-foreground/[0.06] dark:shadow-2xl dark:ring-white/[0.07]">
+            <div className="flex h-full flex-col overflow-hidden pt-16">
+              <CaptainChatScreen onStateUpdate={handleAIAction} appState={state} />
+            </div>
           </div>
         </aside>
       )}

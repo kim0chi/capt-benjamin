@@ -1,7 +1,8 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { Anchor, Mountain, ScrollText, User,  } from 'lucide-react'
+import { Anchor, Mountain, ScrollText, User } from 'lucide-react'
+import { ThemeToggle } from '@/components/ThemeToggle'
 import type { NavTab } from '@/components/BottomNavigation'
 
 interface SidebarNavigationProps {
@@ -38,8 +39,8 @@ export function SidebarNavigation({ activeTab, onTabChange, onProfileTap }: Side
               key={tab.id}
               onClick={() => onTabChange(tab.id)}
               className={`relative flex w-full items-center gap-4 px-4 py-3 rounded-2xl transition-all duration-300 ${
-                isActive 
-                  ? 'bg-wood/20 text-brass shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]' 
+                isActive
+                  ? 'bg-wood/20 text-brass shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]'
                   : 'text-sand/50 hover:bg-wood/10 hover:text-sand/80'
               }`}
             >
@@ -51,11 +52,11 @@ export function SidebarNavigation({ activeTab, onTabChange, onProfileTap }: Side
                   transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                 />
               )}
-              
+
               <div className={`flex items-center justify-center transition-transform ${isActive ? 'scale-110' : ''}`}>
                 {tab.icon}
               </div>
-              
+
               <span className={`font-semibold tracking-wide ${isActive ? 'text-bone text-shadow-sm' : ''}`}>
                 {tab.label}
               </span>
@@ -64,7 +65,14 @@ export function SidebarNavigation({ activeTab, onTabChange, onProfileTap }: Side
         })}
       </nav>
 
-      <div className="p-4 border-t border-brass/10 mt-auto">
+      <div className="p-4 border-t border-brass/10 mt-auto space-y-1">
+        {/* Theme toggle row */}
+        <div className="flex items-center justify-between px-4 py-2 rounded-2xl text-sand/60">
+          <span className="text-xs font-semibold uppercase tracking-wider">Theme</span>
+          <ThemeToggle />
+        </div>
+
+        {/* Profile button */}
         <button
           onClick={onProfileTap}
           className="flex w-full items-center gap-3 px-4 py-3 rounded-2xl hover:bg-wood/20 transition-colors text-sand/80 hover:text-bone group"
@@ -73,8 +81,8 @@ export function SidebarNavigation({ activeTab, onTabChange, onProfileTap }: Side
             <User className="h-5 w-5" />
           </div>
           <div className="flex flex-col items-start px-1">
-             <span className="text-sm font-semibold tracking-wide">Captain&apos;s Quarters</span>
-             <span className="text-[10px] uppercase tracking-wider text-sand/50 group-hover:text-teal/80 transition-colors">Profile & Settings</span>
+            <span className="text-sm font-semibold tracking-wide">Captain&apos;s Quarters</span>
+            <span className="text-[10px] uppercase tracking-wider text-sand/50 group-hover:text-teal/80 transition-colors">Profile & Settings</span>
           </div>
         </button>
       </div>
