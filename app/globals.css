@@ -3,58 +3,150 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* ─── Light Mode — Neat & Breathable ───────────────────────── */
 :root {
-  --background: 222 44% 10%;
-  --foreground: 38 45% 88%;
-  --card: 26 33% 17%;
-  --card-foreground: 38 45% 88%;
-  --popover: 26 33% 17%;
-  --popover-foreground: 38 45% 88%;
-  --primary: 44 51% 56%;
-  --primary-foreground: 222 44% 10%;
-  --secondary: 171 39% 41%;
-  --secondary-foreground: 38 45% 94%;
-  --muted: 24 23% 24%;
-  --muted-foreground: 34 20% 69%;
-  --accent: 8 52% 42%;
-  --accent-foreground: 38 45% 92%;
-  --destructive: 6 70% 44%;
-  --destructive-foreground: 38 45% 95%;
-  --border: 34 29% 29%;
-  --input: 24 23% 20%;
-  --ring: 44 51% 56%;
-  --radius: 0.875rem;
+  /* Page & surfaces */
+  --background: 240 7% 95%;           /* #F2F2F5 slightly off-white page bg */
+  --foreground: 0 0% 7%;            /* true near-black text */
+  --card: 0 0% 100%;                  /* #FFFFFF pure white cards — lift off bg */
+  --card-foreground: 0 0% 7%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 7%;
 
-  --chart-1: 44 51% 56%;
-  --chart-2: 171 39% 41%;
-  --chart-3: 36 54% 74%;
-  --chart-4: 8 52% 42%;
-  --chart-5: 222 44% 10%;
+  /* Interactive */
+  --primary: 0 0% 7%;               /* dark pill / primary CTA */
+  --primary-foreground: 0 0% 100%;
+  --secondary: 240 7% 95%;             /* same component tint */
+  --secondary-foreground: 0 0% 7%;
+  --muted: 240 5% 92%;
+  --muted-foreground: 0 0% 40%;     /* true gray for muted text */
+  --accent: 0 0% 7%;
+  --accent-foreground: 0 0% 100%;
 
-  --sidebar: 222 44% 10%;
-  --sidebar-foreground: 38 45% 88%;
-  --sidebar-primary: 44 51% 56%;
-  --sidebar-primary-foreground: 222 44% 10%;
-  --sidebar-accent: 171 39% 41%;
-  --sidebar-accent-foreground: 38 45% 94%;
-  --sidebar-border: 34 29% 29%;
-  --sidebar-ring: 44 51% 56%;
+  /* State */
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 100%;
 
-  --navy: 222 44% 10%;
-  --ink: 226 28% 15%;
-  --teal: 171 39% 41%;
-  --sky: 190 48% 56%;
-  --sand: 36 54% 74%;
-  --parchment: 38 41% 84%;
-  --bone: 35 34% 92%;
-  --brass: 44 51% 56%;
-  --gold: 42 67% 63%;
-  --coral: 8 52% 42%;
-  --oxblood: 2 54% 30%;
-  --wood: 24 45% 22%;
-  --wood-light: 30 33% 30%;
-  --ocean-mid: 207 45% 17%;
-  --ocean-surface: 185 37% 30%;
+  /* Structure */
+  --border: 240 6% 90%;                /* subtle gray border */
+  --input: 240 7% 95%;
+  --ring: 0 0% 7%;
+  --radius: 1rem;
+
+  /* Charts */
+  --chart-1: 37 90% 51%;
+  --chart-2: 258 90% 66%;
+  --chart-3: 174 72% 40%;
+  --chart-4: 0 72% 51%;
+  --chart-5: 217 91% 60%;
+
+  /* Sidebar */
+  --sidebar: 0 0% 100%;
+  --sidebar-foreground: 0 0% 7%;
+  --sidebar-primary: 0 0% 7%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 240 7% 95%;
+  --sidebar-accent-foreground: 0 0% 7%;
+  --sidebar-border: 240 6% 90%;
+  --sidebar-ring: 0 0% 7%;
+
+  /* ── Capt. Benjamin semantic brand tokens ── */
+  --brand-lime: 82 100% 63%;        /* electric lime — reserved for dark mode */
+  --coral:  0 72% 55%;              /* leaks / danger */
+  --brass:  37 90% 51%;             /* expenses / warning */
+  --teal:   174 72% 40%;            /* goals / success */
+  --sky:    199 80% 52%;            /* info / AI assistant */
+
+  /* ── Legacy pirate palette — LIGHT MODE VALUES ──
+     These tokens are still referenced by existing components.
+     In light mode they flip to dark/readable values so text
+     stays legible on white/lavender backgrounds.            */
+  --navy:         240 7% 95%;         /* bg-navy = page off-white */
+  --ink:           0 0% 100%;              /* bg-ink = white glass nav */
+  --wood:         240 6% 93%;
+  --wood-light:   240 5% 90%;
+  --ocean-mid:    240 5% 93%;
+  --ocean-surface:240 5% 91%;
+  --bone:         0 0% 7%;          /* text-bone → near-black in light */
+  --sand:         0 0% 30%;         /* text-sand → dark gray in light */
+  --parchment:    0 0% 18%;         /* text-parchment → slightly lighter than bone */
+  --gold:         37 90% 40%;       /* slightly deeper gold for light bg contrast */
+  --oxblood:      0 65% 40%;
+}
+
+/* ─── Dark Mode — Ocean + Gold ─────────────────────────────────
+   Background:         #1C1C1E  hsl(240 3% 11%)
+   Primary surface:    #2A2A2D  hsl(240 3% 17%)
+   Secondary surface:  #3A3A3C  hsl(240 2% 23%)
+   CTA accent:         Yellow   hsl(45 100% 55%)
+   Ocean accent:       Blue     hsl(210 88% 62%)
+─────────────────────────────────────────────────────────────── */
+.dark {
+  /* Page & surfaces */
+  --background: 240 3% 11%;           /* #1C1C1E */
+  --foreground: 0 0% 100%;            /* #FFFFFF pure white */
+  --card: 240 3% 17%;                 /* #2A2A2D primary surface */
+  --card-foreground: 0 0% 100%;
+  --popover: 240 3% 17%;
+  --popover-foreground: 0 0% 100%;
+
+  /* Interactive */
+  --primary: 45 100% 55%;             /* golden yellow CTA */
+  --primary-foreground: 240 3% 11%;   /* dark text on yellow button */
+  --secondary: 240 2% 23%;            /* #3A3A3C secondary surface / buttons */
+  --secondary-foreground: 0 0% 100%;
+  --muted: 240 2% 23%;
+  --muted-foreground: 0 0% 62%;      /* off-white for paragraph/secondary text */
+
+  /* Ocean blue accent — active states, links, indicators */
+  --accent: 210 88% 62%;
+  --accent-foreground: 0 0% 100%;
+
+  /* State */
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+
+  /* Structure */
+  --border: 240 3% 17%;               /* matches --card = visually borderless */
+  --input: 240 2% 23%;
+  --ring: 210 88% 62%;                /* focus ring = ocean blue */
+
+  /* Charts */
+  --chart-1: 45 100% 55%;             /* yellow */
+  --chart-2: 210 88% 62%;             /* ocean blue */
+  --chart-3: 160 70% 52%;             /* teal/emerald */
+  --chart-4: 0 84% 65%;               /* coral */
+  --chart-5: 263 74% 77%;             /* violet */
+
+  /* Sidebar */
+  --sidebar: 240 3% 11%;
+  --sidebar-foreground: 0 0% 100%;
+  --sidebar-primary: 45 100% 55%;
+  --sidebar-primary-foreground: 240 3% 11%;
+  --sidebar-accent: 240 2% 23%;
+  --sidebar-accent-foreground: 0 0% 100%;
+  --sidebar-border: 240 3% 17%;
+  --sidebar-ring: 210 88% 62%;
+
+  /* Capt. Benjamin semantic brand tokens */
+  --brand-lime: 82 100% 63%;          /* kept as token, no longer primary */
+  --coral:  0 84% 65%;                /* leaks / danger */
+  --brass:  45 100% 55%;              /* expenses / warning — now matches CTA yellow */
+  --teal:   160 70% 52%;              /* goals / success */
+  --sky:    210 88% 62%;              /* info / AI — now matches ocean blue */
+
+  /* Legacy pirate palette — aligned to new surfaces */
+  --navy:         240 3% 11%;         /* bg-navy = new background */
+  --ink:          240 3% 17%;         /* bg-ink = new primary surface */
+  --wood:         240 2% 23%;         /* bg-wood = secondary surface */
+  --wood-light:   240 2% 27%;
+  --ocean-mid:    210 45% 18%;        /* keep ocean blue tint */
+  --ocean-surface:210 40% 28%;
+  --bone:         0 0% 100%;           /* text-bone = pure white */
+  --sand:         0 0% 100%;          /* text-sand = pure white (opacity variants give hierarchy) */
+  --parchment:    0 0% 100%;          /* text-parchment = pure white */
+  --gold:         45 100% 55%;        /* text-gold = CTA yellow */
+  --oxblood:      2 54% 30%;
 }
 
 @theme inline {
@@ -90,24 +182,44 @@
   --color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
   --color-sidebar-border: hsl(var(--sidebar-border));
   --color-sidebar-ring: hsl(var(--sidebar-ring));
+
   --font-sans: 'Geist', 'Geist Fallback';
   --font-mono: 'Geist Mono', 'Geist Mono Fallback';
 
-  --color-navy: hsl(var(--navy));
-  --color-ink: hsl(var(--ink));
+  /* Brand tokens as Tailwind color classes */
+  --color-brand-lime: hsl(var(--brand-lime));
+  --color-coral: hsl(var(--coral));
+  --color-brass: hsl(var(--brass));
   --color-teal: hsl(var(--teal));
   --color-sky: hsl(var(--sky));
-  --color-sand: hsl(var(--sand));
-  --color-parchment: hsl(var(--parchment));
-  --color-bone: hsl(var(--bone));
-  --color-brass: hsl(var(--brass));
-  --color-gold: hsl(var(--gold));
-  --color-coral: hsl(var(--coral));
-  --color-oxblood: hsl(var(--oxblood));
+
+  /* Legacy tokens — still used by existing components */
+  --color-navy: hsl(var(--navy));
+  --color-ink: hsl(var(--ink));
   --color-wood: hsl(var(--wood));
   --color-wood-light: hsl(var(--wood-light));
   --color-ocean-mid: hsl(var(--ocean-mid));
   --color-ocean-surface: hsl(var(--ocean-surface));
+  --color-bone: hsl(var(--bone));
+  --color-sand: hsl(var(--sand));
+  --color-parchment: hsl(var(--parchment));
+  --color-gold: hsl(var(--gold));
+  --color-oxblood: hsl(var(--oxblood));
+}
+
+@layer base {
+  /* Hide all scrollbars globally */
+  *, html, body {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  *::-webkit-scrollbar,
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
 }
 
 @layer base {
@@ -118,11 +230,16 @@
 
   body {
     @apply bg-background text-foreground;
-    background-image:
-      radial-gradient(circle at top left, hsl(var(--ocean-surface) / 0.18), transparent 30%),
-      radial-gradient(circle at top right, hsl(var(--brass) / 0.08), transparent 22%),
-      linear-gradient(180deg, hsl(var(--navy)) 0%, hsl(var(--ink)) 52%, hsl(var(--navy)) 100%);
     min-height: 100vh;
+  }
+
+  /* Dark mode body — ultra-subtle lime depth gradient */
+  .dark body {
+    background-image: radial-gradient(
+      ellipse 80% 50% at 50% -10%,
+      hsl(var(--brand-lime) / 0.04) 0%,
+      transparent 60%
+    );
   }
 }
 
@@ -131,53 +248,108 @@
     font-family: var(--font-sans);
   }
 
-  .pirate-page {
-    background:
-      radial-gradient(circle at top left, hsl(var(--wood-light) / 0.18), transparent 30%),
-      linear-gradient(180deg, hsl(var(--navy)) 0%, hsl(var(--ink)) 100%);
+  /* ── Modern surface helpers ── */
+  .surface-card {
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    box-shadow: 0 1px 3px hsl(var(--foreground) / 0.04), 0 4px 12px hsl(var(--foreground) / 0.04);
   }
 
-  .pirate-panel {
-    background:
-      linear-gradient(180deg, hsl(var(--ink) / 0.4), hsl(var(--navy) / 0.7)),
-      linear-gradient(145deg, hsl(var(--teal) / 0.05), transparent 40%);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid hsl(var(--brass) / 0.15);
+  .surface-panel {
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    box-shadow: 0 8px 32px hsl(var(--foreground) / 0.08);
+  }
+
+  .dark .surface-glow {
     box-shadow:
-      inset 0 1px 0 hsl(var(--bone) / 0.03),
-      0 14px 34px hsl(var(--ink) / 0.5);
+      0 0 0 1px hsl(var(--brand-lime) / 0.2),
+      0 4px 24px hsl(var(--brand-lime) / 0.08);
   }
 
-  .pirate-panel-soft {
-    background:
-      linear-gradient(180deg, hsl(var(--ink) / 0.3), hsl(var(--navy) / 0.5)),
-      linear-gradient(145deg, hsl(var(--sky) / 0.05), transparent 42%);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid hsl(var(--brass) / 0.1);
-    box-shadow: inset 0 1px 0 hsl(var(--bone) / 0.02);
+  .surface-note {
+    background: hsl(var(--muted));
+    border: 1px solid hsl(var(--border));
+    color: hsl(var(--foreground));
   }
 
-  .pirate-note {
-    background: linear-gradient(180deg, hsl(var(--bone) / 0.96), hsl(var(--parchment) / 0.92));
-    color: hsl(var(--ink));
-    border: 1px solid hsl(var(--brass) / 0.28);
-    box-shadow: 0 10px 24px hsl(var(--ink) / 0.16);
+  .surface-chip {
+    background: hsl(var(--secondary));
+    border: 1px solid hsl(var(--border));
+    color: hsl(var(--muted-foreground));
   }
 
-  .pirate-chip {
-    background: linear-gradient(180deg, hsl(var(--brass) / 0.22), hsl(var(--wood-light) / 0.2));
-    border: 1px solid hsl(var(--brass) / 0.24);
-    color: hsl(var(--sand));
-  }
-
-  .pirate-kicker {
-    color: hsl(var(--gold));
-    letter-spacing: 0.18em;
+  .label-kicker {
+    color: hsl(var(--muted-foreground));
+    letter-spacing: 0.1em;
     text-transform: uppercase;
-    font-size: 0.7rem;
-    font-weight: 700;
+    font-size: 0.68rem;
+    font-weight: 600;
+  }
+
+  .dark .label-kicker {
+    color: hsl(var(--brand-lime) / 0.8);
+  }
+
+  /* ── Light mode: force card overlays to solid white ──────────── */
+  html:not(.dark) [class*="bg-ink/"],
+  html:not(.dark) [class*="bg-wood/"],
+  html:not(.dark) [class*="bg-wood-light/"] {
+    background-color: hsl(0 0% 100%) !important;
+    --tw-bg-opacity: 1;
+  }
+
+    /* ── Dark mode: no borders, no shadows on cards/panels ── */
+  .dark .surface-card,
+  .dark .surface-panel,
+  .dark .surface-note,
+  .dark .pirate-panel,
+  .dark .pirate-panel-soft,
+  .dark .pirate-note {
+    border: none;
+    box-shadow: none;
+  }
+  /* Neutralize Tailwind border-border utility on cards in dark mode */
+  .dark [class*="border-border"],
+  .dark [class*="border-brass"],
+  .dark [class*="border-wood"],
+  .dark [class*="border-sand"],
+  .dark [class*="border-ink"] {
+    border-color: transparent;
+  }
+
+    /* Legacy aliases — backward compat (inlined to avoid @apply cross-component issues in Tailwind 4) */
+  .pirate-page { background: hsl(var(--background)); }
+  .pirate-panel {
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    box-shadow: 0 1px 3px hsl(var(--foreground) / 0.04), 0 4px 12px hsl(var(--foreground) / 0.04);
+    border-radius: var(--radius);
+  }
+  .pirate-panel-soft {
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    box-shadow: 0 1px 3px hsl(var(--foreground) / 0.04), 0 4px 12px hsl(var(--foreground) / 0.04);
+    border-radius: var(--radius);
+  }
+  .pirate-note {
+    background: hsl(var(--muted));
+    border: 1px solid hsl(var(--border));
+    color: hsl(var(--foreground));
+    border-radius: calc(var(--radius) - 2px);
+  }
+  .pirate-chip {
+    background: hsl(var(--secondary));
+    border: 1px solid hsl(var(--border));
+    color: hsl(var(--muted-foreground));
+    border-radius: 9999px;
+  }
+  .pirate-kicker {
+    color: hsl(var(--muted-foreground));
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-size: 0.68rem;
+    font-weight: 600;
   }
 }
 
@@ -213,6 +385,11 @@
     50% { opacity: 0.65; }
   }
 
+  @keyframes primaryGlow {
+    0%, 100% { box-shadow: 0 0 12px hsl(var(--primary) / 0.35); }
+    50%       { box-shadow: 0 0 24px hsl(var(--primary) / 0.6); }
+  }
+
   .animate-wave-flow { animation: wave-flow 8s linear infinite; will-change: transform; }
   .animate-wave-flow-slow { animation: wave-flow 13s linear infinite; will-change: transform; }
   .animate-boat-bob { animation: boat-bob 3s ease-in-out infinite; will-change: transform; }
@@ -220,6 +397,7 @@
   .animate-ring-pulse { animation: ring-pulse 2.5s ease-in-out infinite; will-change: filter; }
   .animate-sail-flutter { animation: sail-flutter 4s ease-in-out infinite; will-change: transform; }
   .animate-storm-pulse { animation: storm-pulse 1.5s ease-in-out infinite; will-change: opacity; }
+  .dark .animate-primary-glow { animation: primaryGlow 2s ease-in-out infinite; }
 
   .pb-safe { padding-bottom: max(1.75rem, env(safe-area-inset-bottom)); }
   .pt-safe { padding-top: max(0px, env(safe-area-inset-top)); }
@@ -227,34 +405,15 @@
   .scrollbar-hide { scrollbar-width: none; }
   .scrollbar-hide::-webkit-scrollbar { display: none; }
 
-  /* Native Number Spinner Resets */
   input[type=number]::-webkit-inner-spin-button,
-  input[type=number]::-webkit-outer-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
-  }
-  input[type=number] {
-    -moz-appearance: textfield;
-  }
+  input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  input[type=number] { -moz-appearance: textfield; }
 
-  /* Custom Pirate Scrollbar */
-  .scrollbar-pirate::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
-  .scrollbar-pirate::-webkit-scrollbar-track {
-    background: hsl(var(--ink) / 0.5);
-    border-radius: 4px;
-  }
-  .scrollbar-pirate::-webkit-scrollbar-thumb {
-    background: hsl(var(--brass) / 0.4);
-    border-radius: 4px;
-  }
-  .scrollbar-pirate::-webkit-scrollbar-thumb:hover {
-    background: hsl(var(--brass) / 0.7);
-  }
+  .scrollbar-thin::-webkit-scrollbar { width: 4px; height: 4px; }
+  .scrollbar-thin::-webkit-scrollbar-track { background: hsl(var(--muted)); border-radius: 4px; }
+  .scrollbar-thin::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 4px; }
+  .dark .scrollbar-thin::-webkit-scrollbar-thumb { background: hsl(var(--brand-lime) / 0.35); }
 
-  /* Screen slide transitions */
   @keyframes slideFromRight {
     from { transform: translateX(100%); opacity: 0.7; }
     to   { transform: translateX(0);    opacity: 1; }
@@ -266,11 +425,10 @@
   .slide-from-right { animation: slideFromRight 0.22s ease-out; }
   .slide-from-left  { animation: slideFromLeft  0.22s ease-out; }
 
-  /* Leak patch success flash */
   @keyframes patchFlash {
-    0%   { box-shadow: 0 0 0 0 rgba(74, 160, 143, 0.55); }
-    70%  { box-shadow: 0 0 0 14px rgba(74, 160, 143, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(74, 160, 143, 0); }
+    0%   { box-shadow: 0 0 0 0 hsl(var(--teal) / 0.55); }
+    70%  { box-shadow: 0 0 0 14px hsl(var(--teal) / 0); }
+    100% { box-shadow: 0 0 0 0 hsl(var(--teal) / 0); }
   }
   .animate-patch-flash { animation: patchFlash 0.8s ease-out; }
 }
