@@ -1,11 +1,11 @@
-# Capt. Benjamin
+# Kapitan
 
-Capt. Benjamin is a mobile-first finance companion built with Next.js 16, React 19, Tailwind CSS 4, and the Vercel AI SDK 6.
+Kapitan is a mobile-first finance companion built with Next.js 16, React 19, Tailwind CSS 4, Supabase, and the Vercel AI SDK 6.
 
 ## Features
 
-- Dashboard, leaks, storms, voyage goals, ship condition, and chat screens
-- Local mock chat mode for demos
+- Dashboard, bills, jars, goals, money condition, and chat screens
+- Local-first demo flow with optional Supabase-backed shared demo data
 - Live AI chat through the Vercel AI Gateway
 - Responsive UI with a premium pirate ledger aesthetic
 
@@ -40,7 +40,7 @@ Use the default values:
 NEXT_PUBLIC_APP_MODE=demo
 ```
 
-This keeps chat fully local and uses mock responses from Capt. Benjamin.
+This keeps chat fully local and uses mock responses from Kapitan.
 
 ### Live AI Mode
 
@@ -53,6 +53,22 @@ NEXT_PUBLIC_APP_MODE=live
 ```
 
 The client only sees `NEXT_PUBLIC_APP_MODE`. The API key remains server-only.
+
+## Supabase Demo Backend
+
+Kapitan can run with local-only demo state, but the current app also supports a shared Supabase demo workspace behind server API routes.
+
+1. Create a Supabase project.
+2. Run the SQL in [supabase/migrations/20260429_init_kapitan_demo.sql](supabase/migrations/20260429_init_kapitan_demo.sql).
+3. Add these server-only env vars to `.env.local`:
+
+```env
+SUPABASE_URL=your_supabase_project_url
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+SUPABASE_DEMO_WORKSPACE_SLUG=default-demo
+```
+
+If these env vars are missing or the schema has not been applied, the app falls back to local cached demo data and shows a sync warning instead of breaking.
 
 ## AI Chat
 

@@ -1,24 +1,26 @@
 'use client'
 
+import * as React from 'react'
 import { useEffect, useRef, useState } from 'react'
 import { Compass, Loader2, Send } from 'lucide-react'
 import { useChat } from '@ai-sdk/react'
 import { AI_CONFIG } from '@/lib/ai-config'
 import { generateMockSuggestion, parseAIAction } from '@/lib/mock-responses'
-import { CaptainBenjaminPortrait } from '@/components/illustrations/CaptainBenjaminPortrait'
+import { KapitanAvatar } from '@/components/illustrations/KapitanPortrait'
 import type { AIAction, AppState, ChatMessage } from '@/types'
 
 const QUICK_PROMPTS = [
   'I saved P50 today',
-  'What storm should I watch first?',
+  'What bill should I handle first?',
   'Where should my next savings go?',
-  'What leak should I patch this week?',
+  'What spending habit should I cut this week?',
   'How much can I safely spend today?',
 ] as const
 
 interface CaptainChatScreenProps {
   onStateUpdate?: (action: AIAction) => void
   appState?: AppState
+  selectedJarId?: string
 }
 
 function getTextContent(message: { content?: string; parts?: Array<{ type: string; text?: string }> }) {
@@ -31,13 +33,86 @@ function getTextContent(message: { content?: string; parts?: Array<{ type: strin
   )
 }
 
-export function CaptainChatScreen({ onStateUpdate, appState }: CaptainChatScreenProps) {
+function renderInlineMarkdown(text: string) {
+  const nodes: React.ReactNode[] = []
+  const pattern = /(\*\*[^*]+\*\*|`[^`]+`)/g
+  let lastIndex = 0
+  let match: RegExpExecArray | null
+
+  while ((match = pattern.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      nodes.push(text.slice(lastIndex, match.index))
+    }
+
+    const token = match[0]
+    if (token.startsWith('**') && token.endsWith('**')) {
+      nodes.push(
+        <strong key={`${match.index}-strong`} className="font-semibold">
+          {token.slice(2, -2)}
+        </strong>,
+      )
+    } else if (token.startsWith('`') && token.endsWith('`')) {
+      nodes.push(
+        <code
+          key={`${match.index}-code`}
+          className="rounded-md bg-black/12 px-1.5 py-0.5 font-mono text-[0.92em] dark:bg-white/8"
+        >
+          {token.slice(1, -1)}
+        </code>,
+      )
+    }
+
+    lastIndex = match.index + token.length
+  }
+
+  if (lastIndex < text.length) {
+    nodes.push(text.slice(lastIndex))
+  }
+
+  return nodes.length > 0 ? nodes : text
+}
+
+function AssistantMarkdown({ text }: { text: string }) {
+  const blocks = text.trim().split(/\n\s*\n/)
+
+  return (
+    <div className="space-y-3 text-sm leading-relaxed">
+      {blocks.map((block, blockIndex) => {
+        const lines = block.split('\n').map((line) => line.trimEnd())
+        const isBulletList = lines.every((line) => /^[-*]\s+/.test(line))
+
+        if (isBulletList) {
+          return (
+            <ul key={`block-${blockIndex}`} className="list-disc space-y-1 pl-5">
+              {lines.map((line, lineIndex) => (
+                <li key={`line-${lineIndex}`}>{renderInlineMarkdown(line.replace(/^[-*]\s+/, ''))}</li>
+              ))}
+            </ul>
+          )
+        }
+
+        return (
+          <p key={`block-${blockIndex}`} className="whitespace-pre-wrap">
+            {lines.map((line, lineIndex) => (
+              <React.Fragment key={`line-${lineIndex}`}>
+                {lineIndex > 0 && <br />}
+                {renderInlineMarkdown(line)}
+              </React.Fragment>
+            ))}
+          </p>
+        )
+      })}
+    </div>
+  )
+}
+
+export function CaptainChatScreen({ onStateUpdate, appState, selectedJarId }: CaptainChatScreenProps) {
   const [mockMessages, setMockMessages] = useState<ChatMessage[]>([
     {
       id: 'welcome',
       role: 'assistant',
       content:
-        'Start with today. Tell me what you saved, what storm is closest, or which goal deserves first claim on your next spare peso.',
+        'Start with today. Tell me what you saved, which bill is coming up, or what goal you want to prioritize next.',
       timestamp: 0,
     },
   ])
@@ -51,7 +126,7 @@ export function CaptainChatScreen({ onStateUpdate, appState }: CaptainChatScreen
   const isAiLoading = status === 'submitted' || status === 'streaming'
   const isBusy = AI_CONFIG.useMockMode ? isMockLoading : isAiLoading
   const messages = AI_CONFIG.useMockMode ? mockMessages : aiMessages
-  const userName = appState?.userProfile.name ?? 'Captain'
+  const userName = appState?.userProfile.name ?? 'you'
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -130,11 +205,16 @@ export function CaptainChatScreen({ onStateUpdate, appState }: CaptainChatScreen
     <div className="flex h-[100dvh] flex-col bg-navy pirate-page lg:h-full">
       <div className="sticky top-0 z-10 border-b border-brass/12 bg-ink/90 px-4 py-4 backdrop-blur-md">
         <div className="flex items-center gap-3">
-          <CaptainBenjaminPortrait className="h-14 w-14 overflow-hidden rounded-full border border-brass/25" compact />
+          <KapitanAvatar className="h-14 w-14 overflow-hidden rounded-full border border-brass/25" />
           <div className="min-w-0">
-            <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-teal">Capt. Benjamin</p>
-            <h1 className="mt-1 text-xl font-semibold text-bone">Quartermaster for {userName}</h1>
-            <p className="mt-1 text-xs leading-5 text-sand/68">Ask about today&apos;s savings, your next storm, or the leak worth patching first.</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-teal">Kapitan</p>
+            <h1 className="mt-1 text-xl font-semibold text-bone">Guide for {userName}</h1>
+            <p className="mt-1 text-xs leading-5 text-sand/68">
+              Ask about today&apos;s savings, upcoming bills, or the spending habit that needs attention first.
+            </p>
+            <p className="mt-1 text-[11px] text-sand/54">
+              {selectedJarId ? 'Using your current jar for quick money actions.' : 'No jar selected for quick money actions.'}
+            </p>
           </div>
         </div>
       </div>
@@ -159,12 +239,12 @@ export function CaptainChatScreen({ onStateUpdate, appState }: CaptainChatScreen
           return (
             <div key={message.id} className={`flex gap-2 ${isUser ? 'justify-end' : 'justify-start'}`}>
               {!isUser && (
-                <CaptainBenjaminPortrait className="mt-1 h-8 w-8 shrink-0 overflow-hidden rounded-full border border-brass/25" compact />
+                <KapitanAvatar className="mt-1 h-8 w-8 shrink-0 overflow-hidden rounded-full border border-brass/25" />
               )}
               <div className={`max-w-[84%] ${isUser ? 'items-end' : 'items-start'} flex flex-col`}>
                 {!isUser && (
                   <p className="mb-1 text-[10px] font-bold uppercase tracking-[0.18em] text-brass">
-                    Capt. Benjamin
+                    Kapitan
                   </p>
                 )}
                 <div
@@ -174,7 +254,11 @@ export function CaptainChatScreen({ onStateUpdate, appState }: CaptainChatScreen
                       : 'rounded-tl-md border border-brass/12 bg-ink/48 text-bone'
                   }`}
                 >
-                  <p className="whitespace-pre-wrap text-sm leading-relaxed">{text || '...'}</p>
+                  {isUser ? (
+                    <p className="whitespace-pre-wrap text-sm leading-relaxed">{text || '...'}</p>
+                  ) : (
+                    <AssistantMarkdown text={text || '...'} />
+                  )}
                 </div>
               </div>
             </div>
@@ -183,17 +267,17 @@ export function CaptainChatScreen({ onStateUpdate, appState }: CaptainChatScreen
 
         {!AI_CONFIG.useMockMode && error && (
           <div className="rounded-[24px] border border-coral/30 bg-coral/10 px-4 py-3 text-sm text-coral">
-            Capt. Benjamin could not reach the live service just now.
+            Kapitan could not reach the live service just now.
           </div>
         )}
 
         {isBusy && (
           <div className="flex justify-start gap-2">
-            <CaptainBenjaminPortrait className="mt-1 h-8 w-8 shrink-0 overflow-hidden rounded-full border border-brass/25" compact />
+            <KapitanAvatar className="mt-1 h-8 w-8 shrink-0 overflow-hidden rounded-full border border-brass/25" />
             <div className="rounded-[24px] rounded-tl-md border border-brass/12 bg-ink/48 px-4 py-3">
               <div className="flex items-center gap-2 text-sm text-sand/75">
                 <Loader2 className="h-4 w-4 animate-spin text-brass" />
-                Capt. Benjamin is checking the charts.
+                Kapitan is checking your plan.
               </div>
             </div>
           </div>
@@ -219,7 +303,7 @@ export function CaptainChatScreen({ onStateUpdate, appState }: CaptainChatScreen
                   void handleSend()
                 }
               }}
-              placeholder="Benjamin, where should I steer today?"
+              placeholder="Kapitan, what should I prioritize today?"
               className="h-12 w-full bg-transparent text-sm text-bone placeholder:text-sand/42 focus:outline-none"
               disabled={isBusy}
             />

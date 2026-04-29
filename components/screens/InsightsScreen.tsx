@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState } from 'react'
 import { CheckCircle2, Compass, Flag, Plus, Star, X } from 'lucide-react'
 import { IslandMap } from '@/components/illustrations/IslandMap'
+import { useIsMobile } from '@/hooks/use-mobile'
 import {
   Drawer,
   DrawerContent,
@@ -56,7 +57,7 @@ function GoalDetailSheet({
         <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-teal">Goal detail</p>
         <h2 className="text-2xl font-semibold text-bone">{goal.name}</h2>
         <p className="text-sm text-sand/68">
-          Keep daily deposits moving here if this destination matters most right now.
+          Keep daily deposits going here if this goal matters most right now.
         </p>
       </div>
 
@@ -78,9 +79,9 @@ function GoalDetailSheet({
       </div>
 
       <div className="rounded-[24px] pirate-note p-4">
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-ink/60">Route estimate</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-ink/60">Time estimate</p>
         <p className="mt-2 text-xl font-semibold text-ink">{projectedWeeks} week(s) at the current pace</p>
-        <p className="mt-1 text-sm text-ink/70">Weekly route: P{goal.weeklyContribution.toLocaleString()}</p>
+        <p className="mt-1 text-sm text-ink/70">Weekly target: P{goal.weeklyContribution.toLocaleString()}</p>
       </div>
 
       <div className="rounded-[24px] border border-brass/12 bg-ink/32 p-4">
@@ -118,7 +119,7 @@ function GoalDetailSheet({
           className="flex min-h-12 w-full items-center justify-center gap-2 rounded-[22px] bg-brass px-4 py-3 text-sm font-bold uppercase tracking-[0.16em] text-ink transition-transform active:scale-95"
         >
           <Star className="h-4 w-4" />
-          Make this the main route
+          Make this the main goal
         </button>
       )}
     </div>
@@ -138,6 +139,7 @@ export function IslandScreen({ goals, prioritizeGoal, savingsEntries, addGoal }:
   const totalTarget = goals.reduce((sum, goal) => sum + goal.targetAmount, 0)
   const overallProgress = totalTarget > 0 ? Math.round((totalSaved / totalTarget) * 100) : 0
   const priorityGoal = goals.find((goal) => goal.isPriority) ?? goals[0]
+  const isMobile = useIsMobile()
 
   const contributionSummary = useMemo(() => {
     const totals = new Map<string, number>()
@@ -151,19 +153,31 @@ export function IslandScreen({ goals, prioritizeGoal, savingsEntries, addGoal }:
 
   const openGoal = (goalId: string) => {
     setSelectedGoalId(goalId)
-    setSheetOpen(true)
+    if (isMobile) {
+      setSheetOpen(true)
+    }
   }
 
   return (
     <div className="min-h-[100dvh] bg-navy pb-28 md:pb-6 pirate-page">
-      <div className="space-y-6 px-4 pt-6 max-w-5xl mx-auto pb-safe">
+      <div className="px-4 pt-6 max-w-7xl mx-auto pb-safe md:grid md:grid-cols-2 md:gap-6 lg:grid-cols-3 lg:gap-8">
+        <div className="hidden md:block md:col-span-1 lg:col-span-2 space-y-6">
+          <div className="sticky top-6">
+            <GoalDetailSheet
+              goal={selectedGoal || priorityGoal}
+              recentDeposits={getRecentGoalDeposits((selectedGoal || priorityGoal).id, savingsEntries)}
+              onPrioritize={() => prioritizeGoal((selectedGoal || priorityGoal).id)}
+            />
+          </div>
+        </div>
+        <div className="md:col-span-1 space-y-6">
         <section className="rounded-[28px] pirate-panel p-5">
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-teal">Goals</p>
-              <h1 className="mt-1 text-3xl font-semibold text-bone">Daily savings routes</h1>
+              <h1 className="mt-1 text-3xl font-semibold text-bone">Savings goals</h1>
               <p className="mt-2 text-sm text-sand/68">
-                Keep one main route in focus, then split only when today&apos;s cargo has a clear second job.
+                Keep one main goal in focus, then split only when today&apos;s savings need a second job.
               </p>
             </div>
             <div className="rounded-[22px] border border-brass/14 bg-ink/36 px-4 py-3 text-right">
@@ -176,7 +190,7 @@ export function IslandScreen({ goals, prioritizeGoal, savingsEntries, addGoal }:
             <div className="mt-4 rounded-[24px] border border-brass/12 bg-ink/30 p-4">
               <div className="flex items-center gap-2 text-brass">
                 <Flag className="h-4 w-4" />
-                <p className="text-xs font-semibold uppercase tracking-[0.16em]">Main route</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em]">Main goal</p>
               </div>
               <div className="mt-3 flex items-end justify-between gap-3">
                 <div>
@@ -189,7 +203,7 @@ export function IslandScreen({ goals, prioritizeGoal, savingsEntries, addGoal }:
                   onClick={() => openGoal(priorityGoal.id)}
                   className="rounded-full border border-brass/16 bg-ink/42 px-3 py-2 text-xs font-bold uppercase tracking-[0.16em] text-brass"
                 >
-                  View route
+                  View goal
                 </button>
               </div>
             </div>
@@ -214,10 +228,10 @@ export function IslandScreen({ goals, prioritizeGoal, savingsEntries, addGoal }:
                     {goal.isPriority && (
                       <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-brass">Priority goal</p>
                     )}
-                    <h2 className="mt-1 text-xl font-semibold text-bone">{goal.name}</h2>
-                    <p className="mt-1 text-sm text-sand/64">
-                      Logged here: P{recentContribution.toLocaleString()} total
-                    </p>
+              <h2 className="mt-1 text-xl font-semibold text-bone">{goal.name}</h2>
+              <p className="mt-1 text-sm text-sand/64">
+                Logged here: P{recentContribution.toLocaleString()} total
+              </p>
                   </div>
                   <div className="text-right">
                     <p className="text-2xl font-semibold text-brass">{progress}%</p>
@@ -290,6 +304,7 @@ export function IslandScreen({ goals, prioritizeGoal, savingsEntries, addGoal }:
             </button>
           )}
         </section>
+        </div>
       </div>
 
       <Drawer open={sheetOpen} onOpenChange={setSheetOpen}>
@@ -303,7 +318,7 @@ export function IslandScreen({ goals, prioritizeGoal, savingsEntries, addGoal }:
             </DrawerTitle>
             <DrawerDescription id={selectedGoal ? `goal-description-${selectedGoal.id}` : undefined}>
               {selectedGoal
-                ? `Progress, recent deposits, and route details for ${selectedGoal.name}.`
+                ? `Progress, recent deposits, and details for ${selectedGoal.name}.`
                 : 'Progress and recent deposits for the selected goal.'}
             </DrawerDescription>
           </DrawerHeader>
@@ -322,3 +337,5 @@ export function IslandScreen({ goals, prioritizeGoal, savingsEntries, addGoal }:
     </div>
   )
 }
+
+

@@ -1,7 +1,8 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { Anchor, Mountain, ScrollText, User,  } from 'lucide-react'
+import { Anchor, CloudLightning, Home, PiggyBank, Target, User } from 'lucide-react'
+import { ThemeToggle } from '@/components/ThemeToggle'
 import type { NavTab } from '@/components/BottomNavigation'
 
 interface SidebarNavigationProps {
@@ -10,71 +11,75 @@ interface SidebarNavigationProps {
   onProfileTap: () => void
 }
 
-const tabs: Array<{ id: NavTab; label: string; icon: React.ReactNode }> = [
-  { id: 'home', label: 'Home', icon: <Anchor className="h-5 w-5" /> },
-  { id: 'goals', label: 'Goals', icon: <Mountain className="h-5 w-5" /> },
-  { id: 'activity', label: 'Activity', icon: <ScrollText className="h-5 w-5" /> },
+const tabs: Array<{ id: NavTab; label: string; Icon: React.ElementType }> = [
+  { id: 'home', label: 'Home', Icon: Home },
+  { id: 'goals', label: 'Goals', Icon: Target },
+  { id: 'bills', label: 'Bills', Icon: CloudLightning },
+  { id: 'jars', label: 'Jars', Icon: PiggyBank },
 ]
 
 export function SidebarNavigation({ activeTab, onTabChange, onProfileTap }: SidebarNavigationProps) {
   return (
-    <aside className="hidden md:flex flex-col w-60 lg:w-70 h-screen bg-ink/80 border-r border-brass/10 backdrop-blur-xl z-50">
-      <div className="flex items-center gap-3 p-6 mb-8">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-wood/40 border border-brass/30 text-brass shadow-lg">
-          <Anchor className="h-6 w-6" />
+    <aside className="hidden h-screen w-72 shrink-0 p-4 md:flex lg:hidden">
+      <div className="surface-panel flex w-full flex-col rounded-[2rem] px-4 py-5">
+        <div className="flex items-center gap-3 px-2">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
+            <Anchor className="h-5 w-5" />
+          </div>
+          <div>
+            <h2 className="font-display text-lg font-bold text-foreground">Kapitan</h2>
+            <p className="label-kicker">Money guidance system</p>
+          </div>
         </div>
-        <div>
-          <h2 className="font-display font-bold text-bone tracking-wide">Capt. Benjamin</h2>
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-teal">OS v1.0.4</p>
+
+        <nav className="mt-8 flex-1 space-y-2">
+          {tabs.map((tab) => {
+            const isActive = activeTab === tab.id
+            const { Icon } = tab
+
+            return (
+              <button
+                key={tab.id}
+                onClick={() => onTabChange(tab.id)}
+                className={`relative flex w-full items-center gap-4 rounded-[1.35rem] px-4 py-3 text-left transition-colors ${
+                  isActive
+                    ? 'bg-background text-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]'
+                    : 'text-muted-foreground hover:bg-background/60 hover:text-foreground'
+                }`}
+              >
+                {isActive && (
+                  <motion.div
+                    layoutId="sidebarActiveIndicator"
+                    className="absolute left-0 h-9 w-1 rounded-r-md bg-accent"
+                    initial={false}
+                    transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                  />
+                )}
+                <Icon className="h-4 w-4 shrink-0" />
+                <span className="font-semibold">{tab.label}</span>
+              </button>
+            )
+          })}
+        </nav>
+
+        <div className="mt-4 flex items-center justify-between rounded-[1.35rem] border border-border/80 bg-background/60 px-3 py-3">
+          <div>
+            <p className="label-kicker">Display</p>
+            <p className="mt-1 text-sm font-semibold text-foreground">Switch theme</p>
+          </div>
+          <ThemeToggle />
         </div>
-      </div>
 
-      <nav className="flex-1 px-4 space-y-2">
-        {tabs.map((tab) => {
-          const isActive = activeTab === tab.id
-
-          return (
-            <button
-              key={tab.id}
-              onClick={() => onTabChange(tab.id)}
-              className={`relative flex w-full items-center gap-4 px-4 py-3 rounded-2xl transition-all duration-300 ${
-                isActive 
-                  ? 'bg-wood/20 text-brass shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]' 
-                  : 'text-sand/50 hover:bg-wood/10 hover:text-sand/80'
-              }`}
-            >
-              {isActive && (
-                <motion.div
-                  layoutId="sidebarActiveIndicator"
-                  className="absolute left-0 w-1 h-8 bg-teal rounded-r-md shadow-[0_0_12px_rgba(76,160,143,0.5)]"
-                  initial={false}
-                  transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                />
-              )}
-              
-              <div className={`flex items-center justify-center transition-transform ${isActive ? 'scale-110' : ''}`}>
-                {tab.icon}
-              </div>
-              
-              <span className={`font-semibold tracking-wide ${isActive ? 'text-bone text-shadow-sm' : ''}`}>
-                {tab.label}
-              </span>
-            </button>
-          )
-        })}
-      </nav>
-
-      <div className="p-4 border-t border-brass/10 mt-auto">
         <button
           onClick={onProfileTap}
-          className="flex w-full items-center gap-3 px-4 py-3 rounded-2xl hover:bg-wood/20 transition-colors text-sand/80 hover:text-bone group"
+          className="mt-3 flex w-full items-center gap-3 rounded-[1.35rem] border border-border/80 bg-background/60 px-4 py-3 text-left text-foreground transition-colors hover:bg-background"
         >
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-ink border border-brass/20 text-brass group-hover:bg-brass/20 transition-colors">
-            <User className="h-5 w-5" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/12 text-primary">
+            <User className="h-4 w-4" />
           </div>
-          <div className="flex flex-col items-start px-1">
-             <span className="text-sm font-semibold tracking-wide">Captain&apos;s Quarters</span>
-             <span className="text-[10px] uppercase tracking-wider text-sand/50 group-hover:text-teal/80 transition-colors">Profile & Settings</span>
+          <div>
+            <p className="text-sm font-semibold">Profile</p>
+            <p className="text-xs text-muted-foreground">Account and demo settings</p>
           </div>
         </button>
       </div>

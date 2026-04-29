@@ -4,19 +4,19 @@ import { cn } from '@/lib/utils'
 
 interface BoatIllustrationProps {
   healthScore?: number
-  leakLabels?: string[]
-  status?: 'Floating' | 'Leaking' | 'Stormy'
+  activeLeaksTotal?: number
+  status?: 'Steady' | 'Needs Attention' | 'Urgent'
   className?: string
 }
 
 export function BoatIllustration({
   healthScore = 82,
-  leakLabels = [],
-  status = 'Floating',
+  activeLeaksTotal = 0,
+  status = 'Steady',
   className,
 }: BoatIllustrationProps) {
   const statusColor =
-    status === 'Floating' ? '#4ca08f' : status === 'Leaking' ? '#c6a15b' : '#a4493d'
+    status === 'Steady' ? '#4ca08f' : status === 'Needs Attention' ? '#c6a15b' : '#a4493d'
 
   return (
     <div className={cn('relative w-full overflow-hidden will-change-transform', className)}>
@@ -27,6 +27,9 @@ export function BoatIllustration({
         xmlns="http://www.w3.org/2000/svg"
       >
         <defs>
+<clipPath id="hullInside">
+<path d="M154 198 L258 198 L286 156 L128 156 Z" />
+</clipPath>
           <linearGradient id="seaGradient" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="#183041" />
             <stop offset="100%" stopColor="#101c2a" />
@@ -89,42 +92,15 @@ export function BoatIllustration({
             <polygon points="206,82 170,145 206,154" fill="#ddd1b5" stroke="#5d4a34" strokeWidth="1.2" />
           </g>
           <polygon points="206,66 223,73 206,82" fill="#a4493d" />
-
-          {leakLabels.length > 0 && (
-            <>
-              <path
-                d="M126 102 C110 100 100 94 90 82"
-                stroke="#c6a15b"
-                strokeWidth="1.2"
-                strokeDasharray="5 5"
-                fill="none"
-              />
-              <text x="85" y="86" fill="#f3e5cc" fontSize="10" fontFamily="Arial, sans-serif" textAnchor="end">
-                {leakLabels[0]}
-              </text>
-            </>
-          )}
-
-          {leakLabels.length > 1 && (
-            <>
-              <path
-                d="M276 110 C300 106 316 98 330 88"
-                stroke="#c6a15b"
-                strokeWidth="1.2"
-                strokeDasharray="5 5"
-                fill="none"
-              />
-              <text x="335" y="90" fill="#f3e5cc" fontSize="10" fontFamily="Arial, sans-serif" textAnchor="start">
-                {leakLabels[1]}
-              </text>
-            </>
-          )}
+<g clipPath="url(#hullInside)">
+<rect x="120" y={198 - (42 * Math.min(activeLeaksTotal / 2500, 1))} width="180" height="42" fill="#6ea2a5" opacity={0.5 + (0.3 * Math.min(activeLeaksTotal / 2500, 1))} />
+</g>
         </g>
 
         <g>
           <rect x="18" y="18" width="118" height="30" rx="15" fill="rgba(16,28,42,0.65)" stroke={statusColor} />
           <text x="77" y="37" fill={statusColor} textAnchor="middle" fontSize="11" fontWeight="700" fontFamily="Arial, sans-serif">
-            {status === 'Floating' ? 'Hull steady' : status === 'Leaking' ? 'Leaks flagged' : 'Storm pressure'}
+            {status === 'Steady' ? 'Hull steady' : status === 'Needs Attention' ? 'Leaks flagged' : 'Storm pressure'}
           </text>
         </g>
       </svg>

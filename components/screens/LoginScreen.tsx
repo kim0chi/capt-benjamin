@@ -18,19 +18,19 @@ export function LoginScreen({ onLogin }: { onLogin: () => void }) {
           <Anchor className="h-10 w-10" />
         </div>
 
-        <h1 className="font-display text-4xl font-bold text-bone">Capt. Benjamin</h1>
-        <p className="mt-3 text-sm text-sand/80">Log your earnings, chart your course, and patch the leaks sinking your wealth.</p>
+        <h1 className="font-display text-4xl font-bold text-bone">Kapitan</h1>
+        <p className="mt-3 text-sm text-sand/80">Track savings, stay ahead of bills, and reduce spending habits that slow you down.</p>
 
         <div className="mt-12 w-full space-y-4">
           <button
             onClick={onLogin}
             className="w-full rounded-2xl bg-brass px-4 py-4 text-sm font-bold uppercase tracking-widest text-ink transition-transform active:scale-95 shadow-[0_0_20px_rgba(198,161,91,0.3)] hover:bg-brass/90"
           >
-            Board Ship
+            Open Demo
           </button>
           
           <button className="w-full rounded-2xl border border-brass/20 bg-ink/50 px-4 py-4 text-sm font-semibold tracking-wide text-bone transition-transform active:scale-95 backdrop-blur-sm">
-            Review Crew Logs
+            Review Features
           </button>
         </div>
       </motion.div>

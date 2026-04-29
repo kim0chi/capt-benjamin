@@ -1,63 +1,67 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { Anchor, Mountain, ScrollText } from 'lucide-react'
+import { CloudLightning, Home, PiggyBank, Target, User } from 'lucide-react'
 
-export type NavTab = 'home' | 'goals' | 'activity'
+export type NavTab = 'home' | 'goals' | 'bills' | 'jars'
 
 interface BottomNavigationProps {
   activeTab: NavTab
   onTabChange: (tab: NavTab) => void
+  onProfileTap?: () => void
 }
 
-const tabs: Array<{ id: NavTab; label: string; icon: React.ReactNode }> = [
-  { id: 'home', label: 'Home', icon: <Anchor className="h-5 w-5" /> },
-  { id: 'goals', label: 'Goals', icon: <Mountain className="h-5 w-5" /> },
-  { id: 'activity', label: 'Activity', icon: <ScrollText className="h-5 w-5" /> },
+const tabs: Array<{ id: NavTab; label: string; Icon: React.ElementType }> = [
+  { id: 'home', label: 'Home', Icon: Home },
+  { id: 'goals', label: 'Goals', Icon: Target },
+  { id: 'bills', label: 'Bills', Icon: CloudLightning },
+  { id: 'jars', label: 'Jars', Icon: PiggyBank },
 ]
 
-export function BottomNavigation({ activeTab, onTabChange }: BottomNavigationProps) {
+export function BottomNavigation({ activeTab, onTabChange, onProfileTap }: BottomNavigationProps) {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-brass/10 bg-ink/85 pb-safe backdrop-blur-xl shadow-[0_-10px_40px_rgba(0,0,0,0.24)] md:hidden">
-      <div className="mx-auto flex h-18.5 max-w-md items-center justify-around px-2 md:max-w-2xl">
+    <nav className="fixed inset-x-0 bottom-0 z-50 px-4 pb-safe pt-2 md:hidden">
+      <div className="mx-auto flex max-w-md items-center gap-1 rounded-[2rem] border border-border/80 bg-card/90 p-2 shadow-[0_14px_48px_rgba(0,0,0,0.22)] backdrop-blur-xl">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id
+          const { Icon } = tab
 
           return (
             <button
               key={tab.id}
               onClick={() => onTabChange(tab.id)}
-              className="relative flex min-h-11 flex-1 flex-col items-center justify-center gap-1"
+              className={`relative flex min-h-[52px] flex-1 items-center justify-center rounded-[1.35rem] px-3 transition-colors ${
+                isActive ? 'text-foreground' : 'text-muted-foreground'
+              }`}
+              aria-current={isActive ? 'page' : undefined}
             >
               {isActive && (
                 <motion.span
-                  layoutId="bottomNavIndicator"
-                  className="absolute top-1 flex h-1.5 w-10 items-start justify-center rounded-full"
-                >
-                  <span className="h-1.5 w-10 rounded-full bg-brass shadow-[0_0_14px_rgba(198,161,91,0.36)]" />
-                </motion.span>
+                  layoutId="bottom-nav-active"
+                  className="absolute inset-0 rounded-[1.35rem] bg-background shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
+                  transition={{ type: 'spring', stiffness: 340, damping: 28 }}
+                />
               )}
-
-              <motion.div
-                animate={{
-                  scale: isActive ? 1.08 : 1,
-                  color: isActive ? '#f3e5cc' : '#8d9cba',
-                }}
-                className="mt-1 flex h-9 w-12 items-center justify-center rounded-full"
-              >
-                {tab.icon}
-              </motion.div>
-
-              <span
-                className={`text-[10px] font-bold uppercase tracking-[0.18em] transition-colors duration-300 ${
-                  isActive ? 'text-brass' : 'text-slate-500'
-                }`}
-              >
-                {tab.label}
+              <span className="relative z-10 flex flex-col items-center gap-1">
+                <Icon className="h-4 w-4" />
+                <span className="text-[10px] font-bold uppercase tracking-[0.18em]">{tab.label}</span>
               </span>
             </button>
           )
         })}
+
+        {onProfileTap && (
+          <>
+            <div className="mx-1 h-8 w-px bg-border" />
+            <button
+              onClick={onProfileTap}
+              className="flex h-[52px] w-[52px] items-center justify-center rounded-[1.35rem] text-muted-foreground transition-colors hover:bg-background hover:text-foreground"
+              aria-label="Profile"
+            >
+              <User className="h-4 w-4" />
+            </button>
+          </>
+        )}
       </div>
     </nav>
   )

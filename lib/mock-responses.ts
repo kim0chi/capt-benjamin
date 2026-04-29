@@ -2,27 +2,27 @@ import type { AIAction, SavingsAllocation } from '@/types'
 
 const GOALS = [
   { id: '1', name: 'Emergency Reserve', aliases: ['emergency', 'reserve', 'emergency reserve'] },
-  { id: '2', name: 'Tuition Chest', aliases: ['tuition', 'school', 'tuition chest'] },
-  { id: '3', name: 'New Phone Bounty', aliases: ['phone', 'new phone', 'phone bounty'] },
-  { id: '4', name: 'Debt Payoff', aliases: ['debt', 'loan', 'payoff', 'debt payoff'] },
+  { id: '2', name: "Anak's Tuition", aliases: ['tuition', 'school', 'anak', 'anak tuition'] },
+  { id: '3', name: 'RAFI Loan Payoff', aliases: ['rafi', 'loan', 'debt', 'payoff'] },
+  { id: '4', name: 'Palengke Capital', aliases: ['palengke', 'capital', 'business capital'] },
 ] as const
 
 const FALLBACK_RESPONSES = {
   budget: [
-    'Keep today simple: log what you saved, protect your next bill, and avoid one repeat leak.',
-    'The cleanest plan is the one you can repeat tomorrow. Save a small amount first, then spend from what remains.',
+    'Keep today simple: log what you saved, protect the next bill, and avoid one repeat spending habit.',
+    'The best plan is the one you can repeat tomorrow. Save a small amount first, then spend from what remains.',
   ],
   spending: [
-    'Your strongest leak to watch is still convenience spending. Patch one repeat habit and move that amount into a goal.',
-    'When money feels tight, the best move is usually smaller daily waste, not one dramatic cut.',
+    'The biggest habit to watch is still convenience spending. Cut one repeat expense and move that amount into savings.',
+    'When money feels tight, the best move is usually reducing small daily waste, not making one dramatic cut.',
   ],
   savings: [
-    'Small cargo moved every day beats a perfect plan that never leaves harbor.',
-    'If the amount is small, that is fine. The habit matters more than the size of one entry.',
+    'A small amount saved regularly is better than waiting for one perfect deposit.',
+    'If the amount is small, that is fine. The habit matters more than one entry.',
   ],
   default: [
-    'Tell me what you saved today, where you placed it, or which goal needs the next push.',
-    'Give me the amount and destination, and I will chart the next step clearly.',
+    'Tell me what you saved today, where you put it, or which goal needs the next push.',
+    'Give me the amount and destination, and I will suggest the next step clearly.',
   ],
 } as const
 
@@ -50,8 +50,8 @@ function parseSavingsAllocations(text: string) {
   const allocations: SavingsAllocation[] = []
   const seen = new Set<string>()
   const patterns = [
-    /(?:p|php|₱)?\s*(\d+(?:\.\d+)?)\s*(?:to|for|into)\s+([a-z ]+?)(?=,| and |$)/g,
-    /([a-z ]+?)\s*(?:gets|get|take|takes)\s*(?:p|php|₱)?\s*(\d+(?:\.\d+)?)/g,
+    /(?:p|php|₱)?\s*(\d+(?:\.\d+)?)\s*(?:to|for|into)\s+([a-z' ]+?)(?=,| and |$)/g,
+    /([a-z' ]+?)\s*(?:gets|get|take|takes)\s*(?:p|php|₱)?\s*(\d+(?:\.\d+)?)/g,
   ]
 
   for (const pattern of patterns) {
@@ -97,14 +97,36 @@ function parseSavingsAction(text: string): AIAction | undefined {
     type: 'LOG_SAVINGS',
     amount: totalAmount,
     allocations,
-    sourceNote: 'Captain chat check-in',
-    createdBy: 'captain',
+    sourceNote: 'Kapitan chat check-in',
+    createdBy: 'kapitan',
+  }
+}
+
+function parseWithdrawalAction(text: string): AIAction | undefined {
+  const lower = text.toLowerCase()
+  const looksLikeSpendLog =
+    /(spent|spend|used|paid|took out|withdraw|withdrew|gastos)/.test(lower) &&
+    /\d/.test(lower)
+
+  if (!looksLikeSpendLog) return undefined
+
+  const amounts = [...lower.matchAll(/(?:p|php|â‚±)?\s*(\d+(?:\.\d+)?)/g)]
+    .map((match) => parseAmountToken(match[1]))
+    .filter((amount) => amount > 0)
+
+  if (amounts.length === 0) return undefined
+
+  return {
+    type: 'WITHDRAW_FROM_JAR',
+    amount: amounts[0],
+    sourceNote: 'Kapitan chat spending log',
+    createdBy: 'kapitan',
   }
 }
 
 function parseGoalPriorityAction(text: string): AIAction | undefined {
   const lower = text.toLowerCase()
-  if (!/(prioritize|focus on|set course|make .*priority|all into)/.test(lower)) {
+  if (!/(prioritize|focus on|main goal|make .*priority|all into)/.test(lower)) {
     return undefined
   }
 
@@ -114,15 +136,15 @@ function parseGoalPriorityAction(text: string): AIAction | undefined {
 
 function parseLeakAction(text: string): AIAction | undefined {
   const lower = text.toLowerCase()
-  if (!/(patch|fix|cut|stop)/.test(lower)) return undefined
-  if (/(food|delivery|takeout)/.test(lower)) return { type: 'PATCH_LEAK', id: '1' }
-  if (/(coffee|cafe)/.test(lower)) return { type: 'PATCH_LEAK', id: '2' }
-  if (/(stream|subscription|netflix)/.test(lower)) return { type: 'PATCH_LEAK', id: '3' }
+  if (!/(cut|stop|reduce|patch|avoid)/.test(lower)) return undefined
+  if (/(snack|merienda|sari-sari)/.test(lower)) return { type: 'PATCH_LEAK', id: '1' }
+  if (/(load|data|promo)/.test(lower)) return { type: 'PATCH_LEAK', id: '2' }
+  if (/(pasalubong|treat|gift)/.test(lower)) return { type: 'PATCH_LEAK', id: '3' }
   return undefined
 }
 
 export function parseAIAction(text: string): AIAction | undefined {
-  return parseSavingsAction(text) ?? parseGoalPriorityAction(text) ?? parseLeakAction(text)
+  return parseSavingsAction(text) ?? parseWithdrawalAction(text) ?? parseGoalPriorityAction(text) ?? parseLeakAction(text)
 }
 
 function buildSavingsReply(action: Extract<AIAction, { type: 'LOG_SAVINGS' }>) {
@@ -133,7 +155,7 @@ function buildSavingsReply(action: Extract<AIAction, { type: 'LOG_SAVINGS' }>) {
   const dominantGoal = action.allocations[0]
   const dominantGoalName = dominantGoal ? findGoalName(dominantGoal.goalId) : 'your main goal'
 
-  return `Logged. I marked P${action.amount} saved today and charted ${allocationText}. That moves ${dominantGoalName} closer without waiting for a perfect amount tomorrow.`
+  return `Saved. I recorded P${action.amount} today and assigned ${allocationText}. That gives ${dominantGoalName} a clear push today.`
 }
 
 export function generateMockSuggestion(userMessage: string): { text: string; action?: AIAction } {
@@ -147,31 +169,38 @@ export function generateMockSuggestion(userMessage: string): { text: string; act
     }
   }
 
+  if (action?.type === 'WITHDRAW_FROM_JAR') {
+    return {
+      text: `Noted. I recorded P${action.amount} as spending from your current jar so your balance and history stay accurate.`,
+      action,
+    }
+  }
+
   if (action?.type === 'PRIORITIZE_GOAL') {
     return {
-      text: `Course updated. I moved your main attention to ${findGoalName(action.id)} so the next savings log points there first.`,
+      text: `Done. I set ${findGoalName(action.id)} as the main goal so your next savings check-in goes there first.`,
       action,
     }
   }
 
   if (action?.type === 'PATCH_LEAK') {
     const leakName =
-      action.id === '1' ? 'food delivery' : action.id === '2' ? 'coffee runs' : 'unused subscriptions'
+      action.id === '1' ? 'sari-sari snacks' : action.id === '2' ? 'load and data' : 'pasalubong spending'
     return {
-      text: `Marked. ${leakName} is the leak to patch next, which frees more room for tomorrow's savings check-in.`,
+      text: `Noted. ${leakName} is the spending habit to reduce next so you can free up more money for savings.`,
       action,
     }
   }
 
   if (/(safe spend|safely spend|how much can i spend)/.test(lower)) {
     return {
-      text: 'Spend only after the savings log is done. Protect today’s set-aside first, then keep optional spending inside the safe amount shown on home.',
+      text: 'Save first and protect the next bill before optional spending. Whatever remains is the safer amount to use today.',
     }
   }
 
   if (/(storm|bill|due)/.test(lower)) {
     return {
-      text: 'Watch the nearest storm first. Clear the next bill before sending extra cargo to lower-priority goals.',
+      text: 'Start with the nearest bill. Handling the next due amount early makes the rest of the week easier.',
     }
   }
 
@@ -181,7 +210,7 @@ export function generateMockSuggestion(userMessage: string): { text: string; act
     }
   }
 
-  if (/(spend|expense|leak)/.test(lower)) {
+  if (/(spend|expense|leak|habit)/.test(lower)) {
     return {
       text: randomItem(FALLBACK_RESPONSES.spending),
     }

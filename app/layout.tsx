@@ -1,16 +1,34 @@
 import type { Metadata } from 'next'
 import { Geist } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
+import { ThemeProvider, THEME_STORAGE_KEY } from '@/components/theme-provider'
 import { Toaster } from '@/components/ui/toaster'
 import './globals.css'
 
 const geist = Geist({ subsets: ['latin'] })
 
+const themeBootScript = `
+(() => {
+  const storageKey = '${THEME_STORAGE_KEY}';
+  const defaultTheme = 'dark';
+  try {
+    const storedTheme = window.localStorage.getItem(storageKey);
+    const theme = storedTheme === 'light' || storedTheme === 'dark' ? storedTheme : defaultTheme;
+    const root = document.documentElement;
+    root.classList.toggle('dark', theme === 'dark');
+    root.style.colorScheme = theme;
+  } catch {
+    const root = document.documentElement;
+    root.classList.add('dark');
+    root.style.colorScheme = defaultTheme;
+  }
+})();
+`
+
 export const metadata: Metadata = {
-  title: 'Capt. Benjamin',
+  title: 'Kapitan',
   description:
-    'Capt. Benjamin charts your money through leaks, storms, and treasure goals with a trustworthy pirate ledger aesthetic.',
-  generator: 'v0.app',
+    'Kapitan helps you stay on top of savings, upcoming bills, and spending habits with a clear, friendly money plan.',
   icons: {
     icon: [
       {
@@ -27,10 +45,15 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className="bg-background">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script id="kapitan-theme-bootstrap" dangerouslySetInnerHTML={{ __html: themeBootScript }} />
+      </head>
       <body className={`${geist.className} bg-background font-sans antialiased`}>
-        {children}
-        <Toaster />
+        <ThemeProvider>
+          {children}
+          <Toaster />
+        </ThemeProvider>
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>

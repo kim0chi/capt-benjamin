@@ -1,25 +1,65 @@
-'use client'
+﻿"use client";
 
-import { Bell, ChevronLeft, ChevronRight, Compass, LogOut, Mail, RotateCcw, Settings, Shield, User } from 'lucide-react'
-import { CaptainBenjaminPortrait } from '@/components/illustrations/CaptainBenjaminPortrait'
-import type { UserProfile } from '@/types'
+import {
+  Bell,
+  ChevronLeft,
+  ChevronRight,
+  Compass,
+  LogOut,
+  Mail,
+  RotateCcw,
+  Settings,
+  Shield,
+  User,
+} from "lucide-react";
+import { KapitanPortrait } from "@/components/illustrations/KapitanPortrait";
+import type { UserProfile } from "@/types";
 
 interface ProfileScreenProps {
-  profile: UserProfile
-  onBack: () => void
-  onLogout?: () => void
-  onResetDemo?: () => void
+  profile: UserProfile;
+  onBack: () => void;
+  onLogout?: () => void;
+  onResetDemo?: () => void;
 }
 
-export function ProfileScreen({ profile, onBack, onLogout, onResetDemo }: ProfileScreenProps) {
+export function ProfileScreen({
+  profile,
+  onBack,
+  onLogout,
+  onResetDemo,
+}: ProfileScreenProps) {
   const profileLinks = [
-    { icon: User, label: 'Captain Details', description: `${profile.name} · ${profile.role}` },
-    { icon: Compass, label: 'Income Rhythm', description: profile.incomeCadence },
-    { icon: Bell, label: 'Warning Signals', description: 'Alerts for leaks, storms, and daily check-ins' },
-    { icon: Shield, label: 'Security & Lockbox', description: 'Demo-only flow for this presentation build' },
-    { icon: Mail, label: 'Communications', description: 'Captain notes and reminder settings' },
-    { icon: Settings, label: 'Vessel Settings', description: 'Currency, app flow, and local demo controls' },
-  ] as const
+    {
+      icon: User,
+      label: "Captain Details",
+      description: `${profile.name} · ${profile.role}`,
+    },
+    {
+      icon: Compass,
+      label: "Income Rhythm",
+      description: profile.incomeCadence,
+    },
+    {
+      icon: Bell,
+      label: "Warning Signals",
+      description: "Alerts for leaks, storms, and daily check-ins",
+    },
+    {
+      icon: Shield,
+      label: "Security & Lockbox",
+      description: "Demo-only flow for this presentation build",
+    },
+    {
+      icon: Mail,
+      label: "Communications",
+      description: "Captain notes and reminder settings",
+    },
+    {
+      icon: Settings,
+      label: "Vessel Settings",
+      description: "Currency, app flow, and local demo controls",
+    },
+  ] as const;
 
   return (
     <div className="min-h-screen bg-navy pb-8 pirate-page">
@@ -34,7 +74,9 @@ export function ProfileScreen({ profile, onBack, onLogout, onResetDemo }: Profil
           </button>
           <div>
             <p className="pirate-kicker">Captain&apos;s Quarters</p>
-            <h1 className="font-display text-2xl font-semibold text-bone">Profile</h1>
+            <h1 className="font-display text-2xl font-semibold text-bone">
+              Profile
+            </h1>
           </div>
         </div>
       </div>
@@ -42,16 +84,20 @@ export function ProfileScreen({ profile, onBack, onLogout, onResetDemo }: Profil
       <div className="space-y-6 px-4 pt-6">
         <div className="rounded-[2rem] pirate-panel px-6 py-8 text-center">
           <div className="mx-auto w-full max-w-[12rem]">
-            <CaptainBenjaminPortrait className="aspect-[4/4.7] w-full rounded-[1.8rem] border border-brass/20" compact />
+            <KapitanPortrait className="aspect-[4/4.7] w-full rounded-[1.8rem] border border-brass/20" />
           </div>
 
           <div className="mt-5 space-y-1">
-            <h2 className="font-display text-2xl font-bold text-bone">{profile.name}</h2>
+            <h2 className="font-display text-2xl font-bold text-bone">
+              {profile.name}
+            </h2>
             <p className="text-sm text-sand/80">{profile.role}</p>
           </div>
 
           <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-brass/20 bg-brass/10 px-4 py-1.5 backdrop-blur-sm">
-            <span className="text-xs font-semibold uppercase tracking-wider text-brass">{profile.incomeCadence}</span>
+            <span className="text-xs font-semibold uppercase tracking-wider text-brass">
+              {profile.incomeCadence}
+            </span>
           </div>
         </div>
 
@@ -60,7 +106,9 @@ export function ProfileScreen({ profile, onBack, onLogout, onResetDemo }: Profil
             <button
               key={link.label}
               className={`flex w-full items-center justify-between p-4 text-left transition-colors hover:bg-wood/20 ${
-                index !== profileLinks.length - 1 ? 'border-b border-brass/10' : ''
+                index !== profileLinks.length - 1
+                  ? "border-b border-brass/10"
+                  : ""
               }`}
             >
               <div className="flex min-w-0 flex-1 items-center gap-4">
@@ -68,8 +116,12 @@ export function ProfileScreen({ profile, onBack, onLogout, onResetDemo }: Profil
                   <link.icon className="h-5 w-5" />
                 </div>
                 <div className="min-w-0">
-                  <p className="truncate font-semibold text-bone">{link.label}</p>
-                  <p className="truncate text-xs text-sand/60">{link.description}</p>
+                  <p className="truncate font-semibold text-bone">
+                    {link.label}
+                  </p>
+                  <p className="truncate text-xs text-sand/60">
+                    {link.description}
+                  </p>
                 </div>
               </div>
               <ChevronRight className="h-5 w-5 shrink-0 text-sand/40" />
@@ -101,5 +153,5 @@ export function ProfileScreen({ profile, onBack, onLogout, onResetDemo }: Profil
         </div>
       </div>
     </div>
-  )
+  );
 }

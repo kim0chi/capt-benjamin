@@ -56,13 +56,24 @@ export type SavingsAllocation = {
   amount: number
 }
 
+export type SavingsJar = {
+  id: string
+  name: string
+  icon: string
+  color: string
+  balance: number
+  notes?: string
+}
+
 export type SavingsEntry = {
   id: string
+  type: 'deposit' | 'withdrawal'
   amount: number
   date: string
   sourceNote: string
   allocations: SavingsAllocation[]
-  createdBy: 'manual' | 'captain'
+  createdBy: 'manual' | 'kapitan'
+  jarId?: string
 }
 
 export type DailyCheckIn = {
@@ -81,7 +92,15 @@ export type AIAction =
       amount: number
       allocations: SavingsAllocation[]
       sourceNote: string
-      createdBy?: 'manual' | 'captain'
+      createdBy?: 'manual' | 'kapitan'
+      jarId?: string
+    }
+  | {
+      type: 'WITHDRAW_FROM_JAR'
+      amount: number
+      sourceNote: string
+      createdBy?: 'manual' | 'kapitan'
+      jarId?: string
     }
   | { type: 'COMPLETE_DAILY_CHECKIN' }
 
@@ -93,6 +112,11 @@ export type StormWarning = {
   daysUntilDue: number
   priority: 'critical' | 'high' | 'medium'
   icon: string
+  status?: 'upcoming' | 'handled' | 'remind_later'
+  remindAt?: string
+  notes?: string
+  handledAt?: string
+  handledFromJarId?: string
 }
 
 export type BoatHealthCategory = {
@@ -104,7 +128,7 @@ export type BoatHealthCategory = {
 
 export type BoatHealth = {
   overallScore: number
-  status: 'Floating' | 'Leaking' | 'Stormy'
+  status: 'Steady' | 'Needs Attention' | 'Urgent'
   categories: BoatHealthCategory[]
   aiInsight: string
   recommendations: string[]
@@ -120,6 +144,7 @@ export type AppState = {
   leaks: Leak[]
   goals: Goal[]
   storms: StormWarning[]
+  jars: SavingsJar[]
   boatHealth: BoatHealth
   transactions: Transaction[]
   dailyCheckIn: DailyCheckIn

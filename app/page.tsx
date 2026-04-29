@@ -3,16 +3,18 @@
 import { useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { BottomNavigation, type NavTab } from '@/components/BottomNavigation'
-import { SidebarNavigation } from '@/components/SidebarNavigation'
 import { CaptainHeader } from '@/components/CaptainHeader'
-import { DashboardScreen } from '@/components/screens/DashboardScreen'
-import { IslandScreen } from '@/components/screens/InsightsScreen'
+import { DesktopTopNav } from '@/components/DesktopTopNav'
+import { SidebarNavigation } from '@/components/SidebarNavigation'
+import { BillsScreen } from '@/components/screens/BillsScreen'
 import { CaptainChatScreen } from '@/components/screens/CaptainChatScreen'
-import { ActivityScreen } from '@/components/screens/TransactionsScreen'
+import { DashboardScreen } from '@/components/screens/DashboardScreen'
 import { HealthScoreScreen } from '@/components/screens/HealthScoreScreen'
-import { ProfileScreen } from '@/components/screens/ProfileScreen'
+import { IslandScreen } from '@/components/screens/InsightsScreen'
+import { JarsScreen } from '@/components/screens/JarsScreen'
 import { LandingScreen } from '@/components/screens/LandingScreen'
 import { OnboardingScreen } from '@/components/screens/OnboardingScreen'
+import { ProfileScreen } from '@/components/screens/ProfileScreen'
 import { UserOnboardingScreen } from '@/components/screens/UserOnboardingScreen'
 import { useAppState } from '@/hooks/useAppState'
 import type { AIAction, DemoOnboardingAnswers, SavingsAllocation } from '@/types'
@@ -20,7 +22,7 @@ import type { AIAction, DemoOnboardingAnswers, SavingsAllocation } from '@/types
 type FrontDoorStage = 'landing' | 'tour' | 'onboarding' | 'app'
 type SubView = 'none' | 'health' | 'profile'
 
-const TAB_ORDER: NavTab[] = ['home', 'goals', 'activity']
+const TAB_ORDER: NavTab[] = ['home', 'goals', 'bills', 'jars']
 
 export default function Home() {
   const [frontDoorStage, setFrontDoorStage] = useState<FrontDoorStage>('landing')
@@ -28,6 +30,7 @@ export default function Home() {
   const [subView, setSubView] = useState<SubView>('none')
   const [slideDir, setSlideDir] = useState<'left' | 'right'>('right')
   const [chatOpen, setChatOpen] = useState(false)
+  const [selectedJarId, setSelectedJarId] = useState<string | undefined>(undefined)
   const touchStartX = useRef(0)
 
   const {
@@ -37,12 +40,24 @@ export default function Home() {
     contributeToGoal,
     logSavingsEntry,
     addGoal,
+    addBill,
+    markBillHandled,
+    deleteBill,
+    snoozeBill,
+    addJar,
+    depositToJar,
+    withdrawFromJar,
+    payBill,
     applyOnboarding,
     resetDemo,
-  } = useAppState()
+  } = useAppState({ enableRemoteSync: frontDoorStage === 'app' })
 
-  const userName = state.userProfile.name.trim() || 'Captain'
+  const userName = state.userProfile.name.trim() || 'Kapitan'
   const firstName = userName.split(' ')[0] || userName
+  const effectiveSelectedJarId =
+    selectedJarId && state.jars.some((jar) => jar.id === selectedJarId)
+      ? selectedJarId
+      : state.jars[0]?.id
 
   const enterApp = () => {
     setFrontDoorStage('app')
@@ -74,18 +89,45 @@ export default function Home() {
   }
 
   const handleAIAction = (action: AIAction) => {
-    switch (action.type) {
+    const jarAwareAction =
+      action.type === 'LOG_SAVINGS'
+        ? {
+            ...action,
+            jarId: action.jarId ?? effectiveSelectedJarId,
+          }
+        : action.type === 'WITHDRAW_FROM_JAR'
+          ? {
+              ...action,
+              jarId: action.jarId ?? effectiveSelectedJarId,
+            }
+          : action
+
+    switch (jarAwareAction.type) {
       case 'PATCH_LEAK':
-        patchLeak(action.id)
+        patchLeak(jarAwareAction.id)
         break
       case 'PRIORITIZE_GOAL':
-        prioritizeGoal(action.id)
+        prioritizeGoal(jarAwareAction.id)
         break
       case 'CONTRIBUTE_GOAL':
-        contributeToGoal(action.id, action.amount)
+        contributeToGoal(jarAwareAction.id, jarAwareAction.amount)
         break
       case 'LOG_SAVINGS':
-        logSavingsEntry(action.amount, action.allocations, action.sourceNote, action.createdBy ?? 'captain')
+        logSavingsEntry(
+          jarAwareAction.amount,
+          jarAwareAction.allocations,
+          jarAwareAction.sourceNote,
+          jarAwareAction.createdBy ?? 'kapitan',
+          jarAwareAction.jarId,
+        )
+        break
+      case 'WITHDRAW_FROM_JAR':
+        if (!jarAwareAction.jarId) break
+        withdrawFromJar(
+          jarAwareAction.jarId,
+          jarAwareAction.amount,
+          jarAwareAction.sourceNote,
+        )
         break
       case 'COMPLETE_DAILY_CHECKIN':
         break
@@ -96,9 +138,10 @@ export default function Home() {
     amount: number,
     allocations: SavingsAllocation[],
     sourceNote: string,
-    createdBy: 'manual' | 'captain' = 'manual',
+    createdBy: 'manual' | 'kapitan' = 'manual',
+    jarId?: string,
   ) => {
-    logSavingsEntry(amount, allocations, sourceNote, createdBy)
+    logSavingsEntry(amount, allocations, sourceNote, createdBy, jarId)
   }
 
   const handleLogout = () => {
@@ -122,10 +165,13 @@ export default function Home() {
 
   const priorityGoal = state.goals.find((goal) => goal.isPriority) ?? state.goals[0]
   const topLeak = state.leaks.find((leak) => !leak.patched) ?? state.leaks[0]
-  const nextStorm = [...state.storms].sort((a, b) => a.daysUntilDue - b.daysUntilDue)[0]
+  const nextStorm = [...state.storms]
+    .filter((storm) => storm.status !== 'handled')
+    .sort((a, b) => a.daysUntilDue - b.daysUntilDue)[0]
+  const remindLaterCount = state.storms.filter((storm) => storm.status === 'remind_later').length
   const captainNote = state.dailyCheckIn.completed
-    ? `${firstName}, today's check-in is logged. ${priorityGoal?.name} moved forward by P${state.dailyCheckIn.totalSaved.toLocaleString()}.`
-    : `${firstName}, even P20 toward ${priorityGoal?.name ?? 'your main goal'} keeps the voyage moving.`
+    ? `${firstName}, today's check-in is done. ${priorityGoal?.name} moved forward by P${state.dailyCheckIn.totalSaved.toLocaleString()}.`
+    : `${firstName}, even P20 toward ${priorityGoal?.name ?? 'your main goal'} keeps your plan moving.`
 
   const renderScreen = () => {
     if (subView === 'profile') {
@@ -149,12 +195,16 @@ export default function Home() {
           <DashboardScreen
             state={state}
             userName={firstName}
+            reminderCount={remindLaterCount}
             onHealthTap={() => setSubView('health')}
             onLogSavings={handleLogSavings}
             onOpenChat={() => setChatOpen(true)}
+            selectedJarId={effectiveSelectedJarId}
+            onSelectedJarChange={setSelectedJarId}
             primaryGoal={priorityGoal}
             nextStorm={nextStorm}
             topLeak={topLeak}
+            jars={state.jars}
           />
         )
       case 'goals':
@@ -166,13 +216,26 @@ export default function Home() {
             addGoal={addGoal}
           />
         )
-      case 'activity':
+      case 'bills':
         return (
-          <ActivityScreen
-            savingsEntries={state.savingsEntries}
-            leaks={state.leaks}
+          <BillsScreen
             storms={state.storms}
-            goals={state.goals}
+            jars={state.jars}
+            onAddBill={addBill}
+            onMarkHandled={markBillHandled}
+            onPayBill={payBill}
+            onDeleteBill={deleteBill}
+            onSnoozeBill={snoozeBill}
+          />
+        )
+      case 'jars':
+        return (
+          <JarsScreen
+            jars={state.jars}
+            savingsEntries={state.savingsEntries}
+            onAddJar={addJar}
+            onDepositToJar={depositToJar}
+            onWithdrawFromJar={withdrawFromJar}
           />
         )
       default:
@@ -205,21 +268,30 @@ export default function Home() {
       initial={{ opacity: 0, scale: 0.985, y: 26 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
       transition={{ duration: 0.42, ease: [0.16, 1, 0.3, 1] }}
-      className="flex h-screen w-full overflow-hidden bg-navy text-foreground pirate-page"
+      className="flex h-screen w-full overflow-hidden bg-background text-foreground pirate-page"
     >
       {subView === 'none' && (
-        <SidebarNavigation
-          activeTab={activeTab}
-          onTabChange={navigateToTab}
-          onProfileTap={() => setSubView('profile')}
-        />
+        <>
+          <DesktopTopNav
+            activeTab={activeTab}
+            onTabChange={navigateToTab}
+            onProfileTap={() => setSubView('profile')}
+          />
+
+          <SidebarNavigation
+            activeTab={activeTab}
+            onTabChange={navigateToTab}
+            onProfileTap={() => setSubView('profile')}
+          />
+        </>
       )}
 
-      <div className="relative flex h-full w-full flex-1 flex-col overflow-hidden lg:max-w-none">
+      <div className="relative flex h-full min-w-0 flex-1 flex-col overflow-hidden">
         {subView === 'none' && (
           <CaptainHeader
+            firstName={firstName}
             captainNote={captainNote}
-            onExpandChat={() => setChatOpen(true)}
+            onChat={() => setChatOpen(true)}
             onProfileTap={() => setSubView('profile')}
           />
         )}
@@ -233,16 +305,28 @@ export default function Home() {
             transition={{ duration: 0.25, ease: 'easeOut' }}
             onTouchStart={subView === 'none' ? handleTouchStart : undefined}
             onTouchEnd={subView === 'none' ? handleTouchEnd : undefined}
-            className={`flex-1 overflow-x-hidden overflow-y-auto ${subView === 'none' ? 'pt-24 pb-24 md:pb-6 lg:pt-6' : ''}`}
+            className={`flex-1 overflow-x-hidden overflow-y-auto ${subView === 'none' ? 'pt-28 pb-28 md:pb-8 md:pt-8 lg:pt-24' : ''}`}
           >
-            <div className="mx-auto h-full w-full max-w-7xl lg:px-6">{renderScreen()}</div>
+            <div className="mx-auto h-full w-full max-w-7xl px-0 md:px-6 xl:px-8">
+              {subView === 'none' && activeTab === 'home' && (
+                <div className="hidden px-4 pb-4 pt-2 lg:block">
+                  <p className="label-kicker">Kapitan</p>
+                  <h1 className="mt-2 text-4xl font-semibold tracking-[-0.04em] text-foreground">
+                    Keep the plan clear, {firstName}.
+                  </h1>
+                </div>
+              )}
+              {renderScreen()}
+            </div>
           </motion.div>
         </AnimatePresence>
 
         {subView === 'none' && (
-          <div className="md:hidden">
-            <BottomNavigation activeTab={activeTab} onTabChange={navigateToTab} />
-          </div>
+          <BottomNavigation
+            activeTab={activeTab}
+            onTabChange={navigateToTab}
+            onProfileTap={() => setSubView('profile')}
+          />
         )}
 
         <AnimatePresence>
@@ -252,18 +336,22 @@ export default function Home() {
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: '100%', opacity: 0 }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="absolute inset-0 z-50 flex flex-col bg-navy/95 pt-safe backdrop-blur-3xl lg:hidden"
+              className="absolute inset-0 z-50 flex flex-col bg-background/95 pt-safe backdrop-blur-3xl lg:hidden"
             >
               <div className="absolute right-6 top-6 z-50">
                 <button
                   onClick={() => setChatOpen(false)}
-                  className="rounded-full border border-brass/20 bg-ink/80 px-4 py-2 text-xs font-bold uppercase tracking-widest text-bone"
+                  className="rounded-full border border-border bg-card/90 px-4 py-2 text-xs font-bold uppercase tracking-widest text-foreground"
                 >
-                  Close Link
+                  Close Chat
                 </button>
               </div>
               <div className="flex-1 overflow-hidden pt-12">
-                <CaptainChatScreen onStateUpdate={handleAIAction} appState={state} />
+                <CaptainChatScreen
+                  onStateUpdate={handleAIAction}
+                  appState={state}
+                  selectedJarId={effectiveSelectedJarId}
+                />
               </div>
             </motion.div>
           )}
@@ -271,9 +359,15 @@ export default function Home() {
       </div>
 
       {subView === 'none' && (
-        <aside className="relative z-40 hidden h-full w-[350px] shrink-0 flex-col border-l border-brass/10 bg-ink lg:flex xl:w-[400px]">
-          <div className="h-full flex-1 overflow-hidden">
-            <CaptainChatScreen onStateUpdate={handleAIAction} appState={state} />
+        <aside className="relative z-30 hidden h-full w-[360px] shrink-0 p-4 lg:flex xl:w-[410px]">
+          <div className="surface-panel flex h-full flex-1 flex-col overflow-hidden rounded-[2rem]">
+            <div className="flex-1 overflow-hidden">
+              <CaptainChatScreen
+                onStateUpdate={handleAIAction}
+                appState={state}
+                selectedJarId={effectiveSelectedJarId}
+              />
+            </div>
           </div>
         </aside>
       )}
